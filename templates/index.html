@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Encrypt/Decrypt</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; }
+        .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        select, input[type="file"], input[type="password"] { width: 95%; padding: 8px; }
+        button { padding: 10px 15px; background-color: #007BFF; color: white; border: none; cursor: pointer; }
+        h1, h2 { color: #333; }
+        hr { margin-top: 40px; margin-bottom: 40px; }
+    </style>
+</head>
+<body>
+    <h1>🔒 Secure File Encryptor / Decryptor</h1>
+
+    <div class="container">
+        <h2>Encrypt a File</h2>
+        <form action="/encrypt" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Choose a file to encrypt:</label>
+                <input type="file" name="file" id="file" required>
+            </div>
+            <div class="form-group">
+                <label for="password_encrypt">Set a Key (Password):</label>
+                <input type="password" name="password" id="password_encrypt" required>
+            </div>
+            <div class="form-group">
+                <label for="algo_encrypt">Encryption Algorithm:</label>
+                <select name="algorithm" id="algo_encrypt">
+                    <option value="AES">AES</option>
+                    <option value="DES">DES</option>
+                    <option value="RC4">RC4</option>
+                </select>
+            </div>
+            <button type="submit">Encrypt and Download</button>
+        </form>
+    </div>
+
+    <hr>
+
+    <div class="container">
+        <h2>Decrypt a File</h2>
+        <form action="/decrypt" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file_decrypt">Choose a file to decrypt:</label>
+                <input type="file" name="file" id="file_decrypt" required>
+            </div>
+            <div class="form-group">
+                <label for="password_decrypt">Enter the Key (Password):</label>
+                <input type="password" name="password" id="password_decrypt" required>
+            </div>
+            <div class="form-group">
+                <label for="algo_decrypt">Encryption Algorithm:</label>
+                <select name="algorithm" id="algo_decrypt">
+                    <option value="AES">AES</option>
+                    <option value="DES">DES</option>
+                    <option value="RC4">RC4</option>
+                </select>
+            </div>
+            <button type="submit">Decrypt and Download</button>
+        </form>
+    </div>
+</body>
+</html>

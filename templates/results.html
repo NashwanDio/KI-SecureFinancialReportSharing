@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Operation Results</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; text-align: center; }
+        .results-box { border: 1px solid #4CAF50; padding: 20px; border-radius: 8px; }
+        .metric { font-size: 1.2em; margin: 15px 0; }
+        .metric span { font-weight: bold; color: #333; }
+        a.button { display: inline-block; margin-top: 20px; padding: 12px 25px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="results-box">
+        <h1>📊 Performance Results</h1>
+        
+        <div class="metric">
+            Operation: <span>{{ metrics.operation }}</span>
+        </div>
+        <div class="metric">
+            Algorithm: <span>{{ metrics.algorithm }}</span>
+        </div>
+        <div class="metric">
+            Execution Time: <span>{{ "%.6f"|format(metrics.time) }} seconds</span>
+        </div>
+        <div class="metric">
+            Output Size: <span>{{ metrics.size }} bytes</span>
+        </div>
+
+        <a href="{{ url_for('download_file', filename=filename) }}" class="button">Download File</a>
+        <a href="{{ url_for('index') }}" class="button">Go Back</a>
+    </div>
+</body>
+</html>
