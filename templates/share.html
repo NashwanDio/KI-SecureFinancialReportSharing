@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Share File</title>
+    <style>
+        body { font-family: sans-serif; max-width: 700px; margin: 50px auto; }
+        .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        h1, h2 { color: #333; }
+        h1 .filename { color: #007BFF; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"] { width: 70%; padding: 8px; }
+        button, a.button { padding: 10px 15px; background-color: #007BFF; color: white; border: none; cursor: pointer; text-decoration: none; }
+        
+        /* User List */
+        .user-list { list-style: none; padding: 0; }
+        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 8px; }
+        .user-item span { font-weight: bold; }
+        .unshare-btn { background-color: #dc3545; }
+
+        /* Flash messages */
+        .flash { padding: 10px; margin-bottom: 15px; border-radius: 5px; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .success { background-color: #d4edda; color: #155724; }
+        .info { background-color: #cce5ff; color: #004085; }
+    </style>
+</head>
+<body>
+    <h1>Share: <span class="filename">{{ file.original_filename }}</span></h1>
+    <p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <h2>Share with a new user</h2>
+        <form method="post">
+            <div class="form-group">
+                <label for="username">Enter username:</label>
+                <input type="text" name="username" id="username" required>
+                <button type="submit">Grant Access</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="container">
+        <h2>Currently shared with:</h2>
+        {% if users_with_access %}
+            <ul class="user-list">
+                {% for user in users_with_access %}
+                <li class="user-item">
+                    <span>{{ user.username }}</span>
+                    <form action="{{ url_for('unshare_file', file_id=file.id, user_id=user.id) }}" method="post" style="margin: 0;">
+                        <button type="submit" class="unshare-btn">Revoke Access</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>This file has not been shared with anyone.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

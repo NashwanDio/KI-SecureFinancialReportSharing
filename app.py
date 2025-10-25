@@ -1,6 +1,10 @@
 import os
 import time
-from flask import Flask, render_template, request, send_from_directory, url_for
+import uuid
+from flask import Flask, render_template, request, send_from_directory, url_for, redirect, flash, abort, session
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # (Keep your existing Crypto imports)
 from Crypto.Cipher import AES, DES, ARC4
@@ -8,9 +12,19 @@ from Crypto.Util.Padding import pad, unpad
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
 
+# --- App Setup (Same as before) ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(16) 
-app.config['UPLOAD_FOLDER'] = 'uploads' # Set the folder for uploads
+app.config['SECRET_KEY'] = os.urandom(24) 
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db' 
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# --- Extension Setup (Same as before) ---
+db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = "You must be logged in to access this page."
 
 # (Keep your existing constants and get_key_from_password function)
 SALT_SIZE = 16
@@ -23,27 +37,124 @@ def get_key_from_password(password, salt, algorithm):
         raise ValueError("Invalid algorithm specified for key derivation")
     return PBKDF2(password, salt, dkLen=key_size)
 
+# --- Database Models ---
+
+# NEW: Association Table for Many-to-Many sharing
+file_shares = db.Table('file_shares',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('file_id', db.Integer, db.ForeignKey('secure_file.id'), primary_key=True)
+)
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    # This is for files the user OWNS
+    files = db.relationship('SecureFile', backref='owner', lazy=True)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+class SecureFile(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    original_filename = db.Column(db.String(255), nullable=False)
+    stored_filename = db.Column(db.String(255), unique=True, nullable=False) 
+    algorithm_used = db.Column(db.String(10), nullable=False)
+    upload_timestamp = db.Column(db.DateTime, server_default=db.func.now())
+    # This is the OWNER
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # NEW: Relationship to see who this file is shared with
+    # This creates the many-to-many link using our association table
+    users_shared_with = db.relationship('User', secondary=file_shares,
+                                      lazy='dynamic',
+                                      # This backref lets us do user.files_shared_with_me
+                                      backref=db.backref('files_shared_with_me', lazy='dynamic'))
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# --- Auth Routes (Same as before) ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid username or password.', 'error')
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists. Please choose another.', 'error')
+            return redirect(url_for('register'))
+        new_user = User(username=username)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Account created successfully! Please log in.', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+# --- Core App Routes ---
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    # UPDATED: We now fetch two separate lists
+    # 1. Files the user OWNS
+    owned_files = SecureFile.query.filter_by(user_id=current_user.id).order_by(SecureFile.upload_timestamp.desc()).all()
+    # 2. Files SHARED WITH the user
+    shared_files = current_user.files_shared_with_me.order_by(SecureFile.upload_timestamp.desc()).all()
+    
+    return render_template('dashboard.html', owned_files=owned_files, shared_files=shared_files)
+
+# /encrypt route is UNCHANGED (logic is the same)
 @app.route('/encrypt', methods=['POST'])
+@login_required
 def encrypt():
-    # --- Get form data (same as before) ---
+    # --- Get form data ---
     file = request.files.get('file')
     password = request.form.get('password')
     algorithm = request.form.get('algorithm')
     if not all([file, password, algorithm]):
-        return "Missing file, password, or algorithm", 400
+        flash('Missing file, password, or algorithm', 'error')
+        return redirect(url_for('dashboard'))
     
     file_data = file.read()
-    
-    # --- Performance Measurement Start ---
     start_time = time.perf_counter()
-
     salt = get_random_bytes(SALT_SIZE)
     key = get_key_from_password(password, salt, algorithm)
-    # (Encryption logic is the same as before)
+    
     if algorithm in ['AES', 'DES']:
         iv = get_random_bytes(IV_SIZES[algorithm])
         CipherClass = AES if algorithm == 'AES' else DES
@@ -55,44 +166,73 @@ def encrypt():
         encrypted_data = cipher.encrypt(file_data)
         final_data = salt + encrypted_data
     else:
-        return "Invalid algorithm", 400
+        flash('Invalid algorithm', 'error')
+        return redirect(url_for('dashboard'))
 
-    # --- Performance Measurement End ---
     end_time = time.perf_counter()
-    
-    # --- Collect Metrics ---
     metrics = {
         'operation': 'Encryption',
         'algorithm': algorithm,
         'time': end_time - start_time,
-        'size': len(final_data) # Ciphertext size
+        'size': len(final_data) 
     }
     
-    # --- Save file and render results ---
-    output_filename = f"encrypted_{file.filename}"
-    output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+    original_filename = file.filename
+    stored_filename = f"{uuid.uuid4().hex}.enc" 
+    output_path = os.path.join(app.config['UPLOAD_FOLDER'], stored_filename)
+    
     with open(output_path, 'wb') as f_out:
         f_out.write(final_data)
         
-    return render_template('results.html', metrics=metrics, filename=output_filename)
-
-
-@app.route('/decrypt', methods=['POST'])
-def decrypt():
-    # --- Get form data (same as before) ---
-    file = request.files.get('file')
-    password = request.form.get('password')
-    algorithm = request.form.get('algorithm')
-    if not all([file, password, algorithm]):
-        return "Missing file, password, or algorithm", 400
+    new_file_record = SecureFile(
+        original_filename=original_filename,
+        stored_filename=stored_filename,
+        algorithm_used=algorithm,
+        user_id=current_user.id
+    )
+    db.session.add(new_file_record)
+    db.session.commit()
+        
+    session['last_metrics'] = metrics
+    session['last_filename'] = stored_filename
     
-    encrypted_data_with_salt = file.read()
+    return redirect(url_for('results'))
 
-    # --- Performance Measurement Start ---
-    start_time = time.perf_counter()
+
+@app.route('/decrypt/<int:file_id>', methods=['POST'])
+@login_required
+def decrypt(file_id):
+    file_record = SecureFile.query.get_or_404(file_id)
+
+    # --- UPDATED: CRITICAL Security Check ---
+    # User must be the owner OR the file must be shared with them.
+    is_owner = file_record.user_id == current_user.id
+    is_shared = file_record in current_user.files_shared_with_me
+    
+    if not is_owner and not is_shared:
+        abort(403) # Forbidden
+
+    # --- Decryption logic remains the same ---
+    password = request.form.get('password')
+    algorithm = file_record.algorithm_used
+    
+    if not password:
+        flash('Password is required.', 'error')
+        return redirect(url_for('dashboard'))
 
     try:
-        # (Decryption logic is the same as before)
+        encrypted_file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_record.stored_filename)
+        with open(encrypted_file_path, 'rb') as f_in:
+            encrypted_data_with_salt = f_in.read()
+    except FileNotFoundError:
+        flash('Error: File not found on server.', 'error')
+        if is_owner: # Only owner can delete a broken record
+            db.session.delete(file_record)
+            db.session.commit()
+        return redirect(url_for('dashboard'))
+
+    start_time = time.perf_counter()
+    try:
         salt = encrypted_data_with_salt[:SALT_SIZE]
         key = get_key_from_password(password, salt, algorithm)
         if algorithm in ['AES', 'DES']:
@@ -106,39 +246,124 @@ def decrypt():
             ciphertext = encrypted_data_with_salt[SALT_SIZE:]
             cipher = ARC4.new(key)
             decrypted_data = cipher.encrypt(ciphertext)
-        else:
-            return "Invalid algorithm", 400
     except (ValueError, KeyError):
-        return "Decryption failed. Please check your key, algorithm, and file.", 400
+        flash('Decryption failed. Please check your password.', 'error')
+        return redirect(url_for('dashboard'))
 
-    # --- Performance Measurement End ---
     end_time = time.perf_counter()
-
-    # --- Collect Metrics ---
     metrics = {
         'operation': 'Decryption',
         'algorithm': algorithm,
         'time': end_time - start_time,
-        'size': len(decrypted_data) # Original file size
+        'size': len(decrypted_data)
     }
 
-    # --- Save file and render results ---
-    output_filename = f"decrypted_{file.filename}"
+    output_filename = f"decrypted_{file_record.original_filename}"
     output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
     with open(output_path, 'wb') as f_out:
         f_out.write(decrypted_data)
         
-    return render_template('results.html', metrics=metrics, filename=output_filename)
+    session['last_metrics'] = metrics
+    session['last_filename'] = output_filename
+    
+    return redirect(url_for('results'))
 
 
-# --- Add a new route for downloading files ---
+# /results route is UNCHANGED
+@app.route('/results')
+@login_required
+def results():
+    metrics = session.pop('last_metrics', None)
+    filename = session.pop('last_filename', None)
+    if not metrics or not filename:
+        return redirect(url_for('dashboard'))
+    return render_template('results.html', metrics=metrics, filename=filename)
+
+
 @app.route('/download/<path:filename>')
+@login_required
 def download_file(filename):
-    """Serves files from the UPLOAD_FOLDER."""
+    """
+    Serves files from the UPLOAD_FOLDER.
+    This route now handles both encrypted and decrypted files.
+    """
+    if filename.startswith('decrypted_'):
+        # This is a temporary decrypted file. The user must have just
+        # successfully decrypted it, so we'll allow the download.
+        pass
+    else:
+        # --- UPDATED: CRITICAL Security Check ---
+        # This is a raw .enc file. Check if user owns it or has share access.
+        file_record = SecureFile.query.filter_by(stored_filename=filename).first()
+        if not file_record:
+            abort(404)
+            
+        is_owner = file_record.user_id == current_user.id
+        is_shared = file_record in current_user.files_shared_with_me
+        
+        if not is_owner and not is_shared:
+            abort(403) # Forbidden
+            
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
 
+# --- NEW: Share Management Routes ---
+
+@app.route('/share/<int:file_id>', methods=['GET', 'POST'])
+@login_required
+def share_file(file_id):
+    file_record = SecureFile.query.get_or_404(file_id)
+
+    # Security: ONLY the owner can manage sharing
+    if file_record.user_id != current_user.id:
+        abort(403)
+
+    if request.method == 'POST':
+        username_to_share = request.form.get('username')
+        user_to_share = User.query.filter_by(username=username_to_share).first()
+
+        if not user_to_share:
+            flash(f'User "{username_to_share}" not found.', 'error')
+        elif user_to_share.id == current_user.id:
+            flash('You cannot share a file with yourself.', 'error')
+        elif file_record in user_to_share.files_shared_with_me:
+            flash(f'File already shared with {user_to_share.username}.', 'info')
+        else:
+            # Add the share relationship
+            file_record.users_shared_with.append(user_to_share)
+            db.session.commit()
+            flash(f'File successfully shared with {user_to_share.username}.', 'success')
+            
+        return redirect(url_for('share_file', file_id=file_id))
+
+    # GET request: Show the sharing page
+    users_with_access = file_record.users_shared_with.all()
+    return render_template('share.html', file=file_record, users_with_access=users_with_access)
+
+
+@app.route('/unshare/<int:file_id>/<int:user_id>', methods=['POST'])
+@login_required
+def unshare_file(file_id, user_id):
+    file_record = SecureFile.query.get_or_404(file_id)
+    user_to_unshare = User.query.get_or_404(user_id)
+
+    # Security: ONLY the owner can manage sharing
+    if file_record.user_id != current_user.id:
+        abort(403)
+
+    # Remove the share relationship
+    if user_to_unshare in file_record.users_shared_with:
+        file_record.users_shared_with.remove(user_to_unshare)
+        db.session.commit()
+        flash(f'Access revoked for {user_to_unshare.username}.', 'success')
+    else:
+        flash(f'{user_to_unshare.username} did not have access.', 'info')
+
+    return redirect(url_for('share_file', file_id=file_id))
+
+
 if __name__ == '__main__':
-    # Ensure the upload folder exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
