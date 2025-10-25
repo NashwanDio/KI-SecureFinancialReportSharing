@@ -192,5 +192,30 @@
     <div style="text-align: center; color: #E72E40; font-size: 20px; font-family: Muller; font-weight: 250; word-wrap: break-word; margin-top: 50px;">
         PT. Pendapat NIlai Wah
     </div>
+    <script>
+        const soundList = [
+            "{{ url_for('static', filename='gold-ship-huh.mp3') }}",
+            "{{ url_for('static', filename='golshin.mp3') }}"
+        ];
+        randomIndex = Math.floor(Math.random() * soundList.length);
+        const annoyingAudio = new Audio(soundList[randomIndex]);
+        const minTime = 40000;
+        const maxTime = 300000;
+
+        function playRandomSound() {
+            const soundToPlay = soundList[randomIndex];
+            annoyingAudio.src = soundToPlay;
+            annoyingAudio.volume = 0.1;
+            annoyingAudio.play().catch(e => {
+                console.log("Audio autoplay blocked by browser.");
+            });
+
+            const randomTime = Math.random() * (maxTime - minTime) + minTime;
+
+            setTimeout(playRandomSound, randomTime);
+        }
+
+        setTimeout(playRandomSound, 2000);
+    </script>
 </body>
 </html>
