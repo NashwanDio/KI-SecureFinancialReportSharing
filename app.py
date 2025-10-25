@@ -1,6 +1,9 @@
 import os
 import time
 import uuid
+import csv
+import threading
+import datetime
 from flask import Flask, render_template, request, send_from_directory, url_for, redirect, flash, abort, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -37,6 +40,25 @@ def get_key_from_password(password, salt, algorithm):
         raise ValueError("Invalid algorithm specified for key derivation")
     return PBKDF2(password, salt, dkLen=key_size)
 
+PERFORMANCE_LOG_FILE = 'performance_log.csv'
+LOG_HEADERS = ['timestamp', 'user_id', 'username', 'operation', 'algorithm', 'execution_time_s', 'output_size_bytes', 'original_filename']
+log_lock = threading.Lock() # Prevents two users from writing at the same time
+
+def log_performance(log_data):
+    """
+    Appends a new row to the performance CSV file in a thread-safe way.
+    """
+    with log_lock:
+        file_exists = os.path.exists(PERFORMANCE_LOG_FILE)
+        
+        with open(PERFORMANCE_LOG_FILE, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=LOG_HEADERS)
+            
+            if not file_exists:
+                writer.writeheader() # Write headers only if file is new
+            
+            writer.writerow(log_data)
+
 # --- Database Models ---
 
 # NEW: Association Table for Many-to-Many sharing
@@ -64,6 +86,7 @@ class SecureFile(db.Model):
     stored_filename = db.Column(db.String(255), unique=True, nullable=False) 
     algorithm_used = db.Column(db.String(10), nullable=False)
     upload_timestamp = db.Column(db.DateTime, server_default=db.func.now())
+    encrypted_data = db.Column(db.LargeBinary, nullable=False)
     # This is the OWNER
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
@@ -193,14 +216,27 @@ def encrypt():
         original_filename=original_filename,
         stored_filename=stored_filename,
         algorithm_used=algorithm,
-        user_id=current_user.id
+        user_id=current_user.id,
+        encrypted_data=final_data
     )
     db.session.add(new_file_record)
     db.session.commit()
         
     session['last_metrics'] = metrics
     session['last_filename'] = stored_filename
-    
+
+    log_data = {
+        'timestamp': datetime.datetime.now().isoformat(),
+        'user_id': current_user.id,
+        'username': current_user.username,
+        'operation': metrics['operation'],
+        'algorithm': metrics['algorithm'],
+        'execution_time_s': metrics['time'],
+        'output_size_bytes': metrics['size'],
+        'original_filename': original_filename
+    }
+    # We start a new thread so the user doesn't wait for the file to be written
+    threading.Thread(target=log_performance, args=(log_data,)).start()
     return redirect(url_for('results'))
 
 
@@ -225,17 +261,18 @@ def decrypt(file_id):
         flash('Password is required.', 'error')
         return redirect(url_for('dashboard'))
 
-    try:
-        encrypted_file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_record.stored_filename)
-        with open(encrypted_file_path, 'rb') as f_in:
-            encrypted_data_with_salt = f_in.read()
-    except FileNotFoundError:
-        flash('Error: File not found on server.', 'error')
-        if is_owner: # Only owner can delete a broken record
-            db.session.delete(file_record)
-            db.session.commit()
-        return redirect(url_for('dashboard'))
+#    try:
+#        encrypted_file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_record.stored_filename)
+#        with open(encrypted_file_path, 'rb') as f_in:
+#            encrypted_data_with_salt = f_in.read()
+#    except FileNotFoundError:
+#        flash('Error: File not found on server.', 'error')
+#        if is_owner: # Only owner can delete a broken record
+#            db.session.delete(file_record)
+#            db.session.commit()
+#        return redirect(url_for('dashboard'))
 
+    encrypted_data_with_salt = file_record.encrypted_data
     start_time = time.perf_counter()
     try:
         salt = encrypted_data_with_salt[:SALT_SIZE]
@@ -271,6 +308,19 @@ def decrypt(file_id):
     session['last_metrics'] = metrics
     session['last_filename'] = output_filename
     
+    log_data = {
+        'timestamp': datetime.datetime.now().isoformat(),
+        'user_id': current_user.id,
+        'username': current_user.username,
+        'operation': metrics['operation'],
+        'algorithm': metrics['algorithm'],
+        'execution_time_s': metrics['time'],
+        'output_size_bytes': metrics['size'],
+        'original_filename': file_record.original_filename
+    }
+    # Start the logging in a background thread
+    threading.Thread(target=log_performance, args=(log_data,)).start()
+
     return redirect(url_for('results'))
 
 
