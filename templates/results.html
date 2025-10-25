@@ -4,32 +4,76 @@
     <meta charset="UTF-8">
     <title>Operation Results</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 50px auto; text-align: center; }
-        .results-box { border: 1px solid #4CAF50; padding: 20px; border-radius: 8px; }
-        .metric { font-size: 1.2em; margin: 15px 0; }
-        .metric span { font-weight: bold; color: #333; }
-        a.button { display: inline-block; margin-top: 20px; padding: 12px 25px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; }
+        body { 
+            font-family: Muller, sans-serif; 
+            max-width: 710px; 
+            margin: 50px auto; 
+            text-align: center; 
+            background: #DBDAE7;
+        }
+        .results-box { 
+            background: white;
+            border: 1px solid #E72E40; 
+            padding: 30px; 
+            border-radius: 18px; 
+            box-shadow: 2px 4px 8px 1px rgba(0, 0, 0, 0.40);
+        }
+        h1 {
+            color: #E72E40;
+            font-family: 'LEMON MILK', sans-serif;
+            font-weight: 700;
+            font-size: 24px;
+        }
+        .metric { 
+            font-size: 24px; 
+            margin: 15px 0; 
+            color: #E72E40;
+            font-family: 'LEMON MILK', sans-serif;
+            font-weight: 700;
+        }
+        .metric span { 
+            font-weight: 700; 
+            color: #e72e40b0; 
+        }
+        a.button { 
+            display: inline-block; 
+            margin-top: 20px; 
+            padding: 15px 25px; 
+            background-color: #E72E40; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-family: 'LEMON MILK', sans-serif;
+            font-weight: 700;
+            font-size: 15px;
+            margin-left: 10px;
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="results-box">
-        <h1>📊 Performance Results</h1>
+        <h1>PERFORMANCE RESULTS</h1>
         
         <div class="metric">
             Operation: <span>{{ metrics.operation }}</span>
         </div>
         <div class="metric">
-            Algorithm: <span>{{ metrics.algorithm }}</span>
+            Method: <span>{{ metrics.algorithm }}</span>
         </div>
         <div class="metric">
-            Execution Time: <span>{{ "%.6f"|format(metrics.time) }} seconds</span>
+            Time Executed: <span>{{ "%.6f"|format(metrics.time) }} s</span>
         </div>
         <div class="metric">
             Output Size: <span>{{ metrics.size }} bytes</span>
         </div>
 
-        <a href="{{ url_for('download_file', filename=filename) }}" class="button">Download File</a>
+        <a href="{{ url_for('download_file', filename=filename) }}" class="button">Download</a>
         <a href="{{ url_for('dashboard') }}" class="button">Back to Dashboard</a>
+    </div>
+
+    <div style="text-align: center; color: #E72E40; font-size: 20px; font-family: Muller; font-weight: 250; word-wrap: break-word; margin-top: 50px;">
+        PT. Pendapat NIlai Wah
     </div>
 </body>
 </html>

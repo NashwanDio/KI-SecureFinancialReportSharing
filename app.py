@@ -113,6 +113,11 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+@app.route('/forgot_password')
+def forgot_password():
+    """A static page for the 'forgot password' link."""
+    return render_template('forgotpassword.html')
+
 @app.route('/logout')
 @login_required
 def logout():

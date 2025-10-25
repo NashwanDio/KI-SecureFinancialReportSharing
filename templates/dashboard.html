@@ -4,29 +4,97 @@
     <meta charset="UTF-8">
     <title>My Dashboard</title>
     <style>
-        body { font-family: sans-serif; max-width: 900px; margin: 50px auto; }
-        .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        body { 
+            font-family: Muller, sans-serif; 
+            max-width: 900px; 
+            margin: 50px auto; 
+            background: #DBDAE7;
+        }
+        .container { 
+            background: white;
+            border: 1px solid #E72E40; 
+            padding: 25px; 
+            border-radius: 18px; 
+            margin-bottom: 30px; 
+            box-shadow: 2px 4px 8px 1px rgba(0, 0, 0, 0.40);
+        }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        select, input[type="file"], input[type="password"] { width: 95%; padding: 8px; }
-        button, a.button { padding: 10px 15px; background-color: #007BFF; color: white; border: none; cursor: pointer; text-decoration: none; display: inline-block; }
-        h1, h2 { color: #333; }
-        hr { margin-top: 40px; margin-bottom: 40px; }
-        .header { display: flex; justify-content: space-between; align-items: center; }
-        .header a { text-decoration: none; color: #dc3545; }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            color: #E72E40;
+            font-family: 'LEMON MILK', sans-serif;
+            font-size: 1.1em;
+        }
+        select, input[type="file"], input[type="password"], input[type="text"] { 
+            width: 95%; 
+            padding: 10px; 
+            border-radius: 8px;
+            border: 1px solid #E72E40;
+            background: #fdfdfd;
+        }
+        button, a.button { 
+            padding: 10px 15px; 
+            background-color: #E72E40; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            text-decoration: none; 
+            display: inline-block;
+            font-family: 'LEMON MILK', sans-serif;
+            font-weight: 700;
+            border-radius: 8px;
+        }
+        h1, h2 { 
+            color: #E72E40; 
+            font-family: 'LEMON MILK', sans-serif;
+            font-weight: 700;
+        }
+        hr { display: none; }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .header a { 
+            text-decoration: none; 
+            color: #E72E40;
+            font-family: 'LEMON MILK', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+        }
         
         /* File List Styles */
         .file-list { list-style: none; padding: 0; }
-        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 10px; }
-        .file-info { flex-grow: 1; }
-        .file-info span { display: block; }
-        .file-info .filename { font-weight: bold; font-size: 1.1em; }
-        .file-info .meta { font-size: 0.9em; color: #555; }
+        .file-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 15px; 
+            border: 1px solid #eee; 
+            border-radius: 5px; 
+            margin-bottom: 10px; 
+        }
+        .file-info .filename { 
+            font-weight: bold; 
+            font-size: 1.1em; 
+            color: #333;
+        }
+        .file-info .meta { 
+            font-size: 0.9em; 
+            color: #555; 
+        }
         .file-actions { display: flex; align-items: center; }
-        .file-actions form { display: flex; align-items: center; }
+        .file-actions form { display: flex; align-items: center; margin: 0; }
         .file-actions input[type="password"] { width: 150px; margin: 0 10px; }
-        .decrypt-btn { background-color: #28a745; }
-        .share-btn { background-color: #17a2b8; margin-left: 10px; }
+        .decrypt-btn, .share-btn { 
+            background-color: #E72E40; 
+            font-size: 0.9em;
+        }
+        .share-btn { 
+            margin-left: 10px; 
+            background-color: #e72e40b0; /* Lighter red */
+        }
 
         /* Flash messages */
         .flash { padding: 10px; margin-bottom: 15px; border-radius: 5px; }
@@ -37,7 +105,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>Welcome, {{ current_user.username }}!</h1>
+        <h1>welcome {{ current_user.username }}!</h1>
         <a href="{{ url_for('logout') }}">Logout</a>
     </div>
 
@@ -53,7 +121,7 @@
         <h2>Encrypt a New File</h2>
         <form action="/encrypt" method="post" enctype="multipart/form-data">
             <div class="form-group">
-                <label for="file">Choose a file to encrypt:</label>
+                <label for="file">Choose a file:</label>
                 <input type="file" name="file" id="file" required>
             </div>
             <div class="form-group">
@@ -61,7 +129,7 @@
                 <input type="password" name="password" id="password_encrypt" required>
             </div>
             <div class="form-group">
-                <label for="algo_encrypt">Encryption Algorithm:</label>
+                <label for="algo_encrypt">Encryption Method:</label>
                 <select name="algorithm" id="algo_encrypt">
                     <option value="AES">AES</option>
                     <option value="DES">DES</option>
@@ -72,8 +140,6 @@
         </form>
     </div>
 
-    <hr>
-
     <div class="container">
         <h2>My Secure Files</h2>
         {% if owned_files %}
@@ -82,11 +148,11 @@
                 <li class="file-item">
                     <div class="file-info">
                         <span class="filename">{{ file.original_filename }}</span>
-                        <span class="meta">Algorithm: {{ file.algorithm_used }} | Uploaded: {{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                        <span class="meta">Method: {{ file.algorithm_used }} | Uploaded: {{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
                     </div>
                     <div class="file-actions">
-                        <form action="{{ url_for('decrypt', file_id=file.id) }}" method="post" style="margin: 0;">
-                            <input type="password" name="password" placeholder="Enter Key to Decrypt" required>
+                        <form action="{{ url_for('decrypt', file_id=file.id) }}" method="post">
+                            <input type="password" name="password" placeholder="Enter Key" required>
                             <button type="submit" class="decrypt-btn">Decrypt</button>
                         </form>
                         <a href="{{ url_for('share_file', file_id=file.id) }}" class="button share-btn">Share</a>
@@ -107,20 +173,24 @@
                 <li class="file-item">
                     <div class="file-info">
                         <span class="filename">{{ file.original_filename }}</span>
-                        <span class="meta">Algorithm: {{ file.algorithm_used }} | Shared by: <strong>{{ file.owner.username }}</strong></span>
+                        <span class="meta">Method: {{ file.algorithm_used }} | Shared by: <strong>{{ file.owner.username }}</strong></span>
                     </div>
                     <div class="file-actions">
-                        <form action="{{ url_for('decrypt', file_id=file.id) }}" method="post" style="margin: 0;">
-                            <input type="password" name="password" placeholder="Enter Key to Decrypt" required>
+                        <form action="{{ url_for('decrypt', file_id=file.id) }}" method="post">
+                            <input type="password" name="password" placeholder="Enter Key" required>
                             <button type="submit" class="decrypt-btn">Decrypt</button>
                         </form>
-                        </div>
+                    </div>
                 </li>
                 {% endfor %}
             </ul>
         {% else %}
             <p>No files have been shared with you.</p>
         {% endif %}
+    </div>
+
+    <div style="text-align: center; color: #E72E40; font-size: 20px; font-family: Muller; font-weight: 250; word-wrap: break-word; margin-top: 50px;">
+        PT. Pendapat NIlai Wah
     </div>
 </body>
 </html>

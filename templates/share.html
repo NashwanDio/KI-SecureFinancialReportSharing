@@ -4,31 +4,90 @@
     <meta charset="UTF-8">
     <title>Share File</title>
     <style>
-        body { font-family: sans-serif; max-width: 700px; margin: 50px auto; }
-        .container { border: 1px solid #ccc; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-        h1, h2 { color: #333; }
-        h1 .filename { color: #007BFF; }
+        body { 
+            font-family: Muller, sans-serif; 
+            max-width: 700px; 
+            margin: 50px auto; 
+            background: #DBDAE7; 
+        }
+        .container { 
+            background: white;
+            border: 1px solid #E72E40; 
+            padding: 20px; 
+            border-radius: 18px; 
+            margin-bottom: 30px; 
+            box-shadow: 2px 4px 8px 1px rgba(0, 0, 0, 0.40);
+        }
+        h1, h2 { 
+            color: #E72E40; 
+            font-family: 'LEMON MILK', sans-serif;
+            font-weight: 700;
+            text-align: center;
+        }
+        h1 .filename { color: #e72e40b0; }
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input[type="text"] { width: 70%; padding: 8px; }
-        button, a.button { padding: 10px 15px; background-color: #007BFF; color: white; border: none; cursor: pointer; text-decoration: none; }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            color: #E72E40;
+            font-family: 'LEMON MILK', sans-serif;
+        }
+        input[type="text"] { 
+            width: 70%; 
+            padding: 10px; 
+            border-radius: 8px;
+            border: 1px solid #E72E40;
+        }
+        button, a.button { 
+            padding: 10px 15px; 
+            background-color: #E72E40; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            text-decoration: none; 
+            font-family: 'LEMON MILK', sans-serif;
+            border-radius: 8px;
+        }
         
         /* User List */
         .user-list { list-style: none; padding: 0; }
-        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 8px; }
-        .user-item span { font-weight: bold; }
-        .unshare-btn { background-color: #dc3545; }
+        .user-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 10px; 
+            border: 1px solid #eee; 
+            border-radius: 5px; 
+            margin-bottom: 8px; 
+        }
+        .user-item span { 
+            font-weight: bold; 
+            color: #E72E40;
+            font-family: 'LEMON MILK', sans-serif;
+        }
+        .unshare-btn { 
+            background-color: #e72e40b0; /* Lighter red */
+        }
 
         /* Flash messages */
         .flash { padding: 10px; margin-bottom: 15px; border-radius: 5px; }
         .error { background-color: #f8d7da; color: #721c24; }
         .success { background-color: #d4edda; color: #155724; }
         .info { background-color: #cce5ff; color: #004085; }
+        
+        a.back-link {
+            font-family: 'LEMON MILK', sans-serif;
+            color: #E72E40;
+            text-decoration: none;
+            font-size: 15px;
+        }
     </style>
 </head>
 <body>
     <h1>Share: <span class="filename">{{ file.original_filename }}</span></h1>
-    <p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+    <p style="text-align: center;">
+        <a href="{{ url_for('dashboard') }}" class="back-link">&larr; Back to Dashboard</a>
+    </p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -43,7 +102,7 @@
         <form method="post">
             <div class="form-group">
                 <label for="username">Enter username:</label>
-                <input type="text" name="username" id="username" required>
+                <input type="text" name="username" id="username" placeholder="username" required>
                 <button type="submit">Grant Access</button>
             </div>
         </form>
@@ -63,8 +122,12 @@
                 {% endfor %}
             </ul>
         {% else %}
-            <p>This file has not been shared with anyone.</p>
+            <p style="text-align: center;">This file has not been shared with anyone.</p>
         {% endif %}
+    </div>
+
+    <div style="text-align: center; color: #E72E40; font-size: 20px; font-family: Muller; font-weight: 250; word-wrap: break-word; margin-top: 50px;">
+        PT. Pendapat NIlai Wah
     </div>
 </body>
 </html>

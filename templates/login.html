@@ -4,44 +4,234 @@
     <meta charset="UTF-8">
     <title>Login</title>
     <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 100px auto; }
-        .container { border: 1px solid #ccc; padding: 25px; border-radius: 8px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input[type="text"], input[type="password"] { width: 95%; padding: 10px; }
-        button { padding: 10px 15px; background-color: #007BFF; color: white; border: none; cursor: pointer; width: 100%; }
-        .flash { padding: 10px; margin-bottom: 15px; border-radius: 5px; }
-        .error { background-color: #f8d7da; color: #721c24; }
+        /* 1. Get rid of default browser margins and set full height */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Prevents scrollbars */
+            font-family: Muller, sans-serif; /* Use a fallback */
+        }
+
+        /* 2. Create the main flex container */
+        .main-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* 3. Style the left (red) panel */
+        .left-panel {
+            width: 913px; /* Fixed width based on design */
+            height: 100%;
+            background: #E72E40;
+            position: relative; /* Anchor for the images */
+            overflow: hidden;
+            flex-shrink: 0; /* Don't let this panel shrink */
+        }
+        
+        /* Keep images positioned as they were, relative to the left panel */
+        .left-panel img:nth-of-type(1) {
+            width: 784.46px; height: 829.64px; left: 65px; top: 97px; position: absolute;
+        }
+        .left-panel img:nth-of-type(2) {
+            width: 139.72px; height: 69.86px; left: 457.70px; top: 208.92px; position: absolute; transform: rotate(11deg); transform-origin: top left;
+        }
+
+
+        /* 4. Style the right (grey) panel */
+        .right-panel {
+            flex-grow: 1; /* This makes it fill the REST of the space */
+            height: 100%;
+            background: #DBDAE7;
+            position: relative; /* Anchor for the footer */
+            
+            /* Center all content inside it */
+            display: flex;
+            flex-direction: column; /* Stack title, form, footer */
+            justify-content: center;
+            align-items: center;
+            padding: 20px; /* Add some spacing */
+            box-sizing: border-box;
+            overflow-y: auto; /* Allow scrolling if content is too tall */
+        }
+
+        /* 5. Style the content block */
+        .login-content {
+            /* This holds the title and the form */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .title {
+            width: 314px;
+            text-align: center;
+            color: #E72E40;
+            font-size: 48px;
+            font-family: 'LEMON MILK', sans-serif;
+            font-weight: 700;
+            word-wrap: break-word;
+            margin-bottom: 40px; /* Space between title and form */
+        }
+        
+        /* 6. Rebuild the form with modern CSS */
+        .login-form {
+            width: 393px;
+            background: #E72E40;
+            border-radius: 18px;
+            padding: 40px;
+            box-sizing: border-box;
+            color: white;
+        }
+        
+        .login-form h2 {
+            text-align: center;
+            color: white;
+            font-size: 48px;
+            font-family: 'LEMON MILK', sans-serif;
+            font-weight: 700;
+            word-wrap: break-word;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            font-size: 20px;
+            font-family: Muller, sans-serif;
+            font-weight: 800;
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        .form-group input {
+            width: 100%; /* Was 296px, 100% is better */
+            height: 57px;
+            background: #D9D9D9;
+            border-radius: 8px;
+            border: none;
+            padding: 15px;
+            box-sizing: border-box;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .form-links {
+            text-align: right;
+            margin-top: -10px;
+        }
+
+        .form-links a, .register-link a {
+            color: white;
+            font-size: 16px;
+            font-family: Muller, sans-serif;
+            font-weight: 800;
+            word-wrap: break-word;
+            text-decoration: none;
+        }
+        
+        .submit-button {
+            width: 203px;
+            height: 63px;
+            background: #D9D9D9;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            color: #E72E40;
+            font-size: 32px;
+            font-family: 'LEMON MILK', sans-serif;
+            font-weight: 700;
+            padding: 0;
+            display: block;
+            margin: 40px auto 20px auto; /* Center it */
+        }
+
+        .register-link {
+            text-align: center;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 10px; /* Was top: 1004px... */
+            right: 20px; /* Position in the corner */
+            text-align: center;
+            color: #E72E40;
+            font-size: 20px;
+            font-family: Muller, sans-serif;
+            font-weight: 250;
+            word-wrap: break-word;
+        }
+        
+        /* Flash messages styling */
+        .flash {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: Muller, sans-serif;
+            font-weight: 800;
+            box-sizing: border-box;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .error { background-color: #E72E40; color: white; }
         .success { background-color: #d4edda; color: #155724; }
-        .text-center { text-align: center; }
+        
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-center">🔒 Login</h1>
+    <div class="main-container">
         
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+        <div class="left-panel">
+            <img src="{{ url_for('static', filename='login.png') }}" alt="Login background art" />
+            <img src="{{ url_for('static', filename='login2.png')}}" alt="Crown graphic" />
+        </div>
+        
+        <div class="right-panel">
+            <div class="login-content">
+                
+                <div class="title">golshi’s<br/>encryptor</div>
 
-        <form method="post">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" name="username" id="username" required>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                <form action="{{ url_for('login') }}" method="post" class="login-form">
+                    <h2>login</h2>
+                    
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" name="username" id="username" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" name="password" id="password" required>
+                    </div>
+                    
+                    <div class="form-links">
+                        <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+                    </div>
+                    
+                    <button type="submit" class="submit-button">login</button>
+                    
+                    <div class="register-link">
+                        <a href="{{ url_for('register') }}">Register here!</a>
+                    </div>
+                </form>
             </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" name="password" id="password" required>
-            </div>
-            <button type="submit">Login</button>
-        </form>
-        <p class="text-center" style="margin-top: 20px;">
-            Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
-        </p>
+
+            <div class="footer">PT. Pendapat NIlai Wah</div>
+        </div>
     </div>
 </body>
 </html>
