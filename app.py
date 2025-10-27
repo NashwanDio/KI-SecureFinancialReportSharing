@@ -9,30 +9,30 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# (Keep your existing Crypto imports)
+# Crypto imports
 from Crypto.Cipher import AES, DES, ARC4
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
 
-# --- App Setup (Same as before) ---
+# --- App Setup ---
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24) 
+app.config['SECRET_KEY'] = os.urandom(24)
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db' 
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- Extension Setup (Same as before) ---
+# --- Extension Setup ---
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = "You must be logged in to access this page."
 
-# (Keep your existing constants and get_key_from_password function)
 SALT_SIZE = 16
 KEY_SIZES = {'AES': 16, 'DES': 8, 'RC4': 16}
 IV_SIZES = {'AES': 16, 'DES': 8}
+
 
 def get_key_from_password(password, salt, algorithm):
     key_size = KEY_SIZES.get(algorithm)
@@ -40,9 +40,12 @@ def get_key_from_password(password, salt, algorithm):
         raise ValueError("Invalid algorithm specified for key derivation")
     return PBKDF2(password, salt, dkLen=key_size)
 
+
 PERFORMANCE_LOG_FILE = 'performance_log.csv'
-LOG_HEADERS = ['timestamp', 'user_id', 'username', 'operation', 'algorithm', 'execution_time_s', 'output_size_bytes', 'original_filename']
-log_lock = threading.Lock() # Prevents two users from writing at the same time
+LOG_HEADERS = ['timestamp', 'user_id', 'username', 'operation', 'algorithm', 'execution_time_s', 'output_size_bytes',
+               'original_filename']
+log_lock = threading.Lock()
+
 
 def log_performance(log_data):
     """
@@ -50,28 +53,30 @@ def log_performance(log_data):
     """
     with log_lock:
         file_exists = os.path.exists(PERFORMANCE_LOG_FILE)
-        
+
         with open(PERFORMANCE_LOG_FILE, 'a', newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=LOG_HEADERS)
-            
+
             if not file_exists:
-                writer.writeheader() # Write headers only if file is new
-            
+                writer.writeheader()  # header if needed
+
             writer.writerow(log_data)
+
 
 # --- Database Models ---
 
 # NEW: Association Table for Many-to-Many sharing
 file_shares = db.Table('file_shares',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-    db.Column('file_id', db.Integer, db.ForeignKey('secure_file.id'), primary_key=True)
-)
+                       db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+                       db.Column('file_id', db.Integer, db.ForeignKey('secure_file.id'), primary_key=True)
+                       )
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    # This is for files the user OWNS
+    # file owner
     files = db.relationship('SecureFile', backref='owner', lazy=True)
 
     def set_password(self, password):
@@ -80,29 +85,30 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+
 class SecureFile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     original_filename = db.Column(db.String(255), nullable=False)
-    stored_filename = db.Column(db.String(255), unique=True, nullable=False) 
+    stored_filename = db.Column(db.String(255), unique=True, nullable=False)
     algorithm_used = db.Column(db.String(10), nullable=False)
     upload_timestamp = db.Column(db.DateTime, server_default=db.func.now())
     encrypted_data = db.Column(db.LargeBinary, nullable=False)
-    # This is the OWNER
+    # OWNER
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    
+
     # NEW: Relationship to see who this file is shared with
-    # This creates the many-to-many link using our association table
+    # many-to-many
     users_shared_with = db.relationship('User', secondary=file_shares,
-                                      lazy='dynamic',
-                                      # This backref lets us do user.files_shared_with_me
-                                      backref=db.backref('files_shared_with_me', lazy='dynamic'))
+                                        lazy='dynamic',
+                                        backref=db.backref('files_shared_with_me', lazy='dynamic'))
 
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- Auth Routes (Same as before) ---
+
+# --- Auth Routes  ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -117,6 +123,7 @@ def login():
         else:
             flash('Invalid username or password.', 'error')
     return render_template('login.html')
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -136,16 +143,19 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+
 @app.route('/forgot_password')
 def forgot_password():
     """A static page for the 'forgot password' link."""
     return render_template('forgotpassword.html')
+
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
 
 # --- Core App Routes ---
 
@@ -155,6 +165,7 @@ def index():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -163,10 +174,10 @@ def dashboard():
     owned_files = SecureFile.query.filter_by(user_id=current_user.id).order_by(SecureFile.upload_timestamp.desc()).all()
     # 2. Files SHARED WITH the user
     shared_files = current_user.files_shared_with_me.order_by(SecureFile.upload_timestamp.desc()).all()
-    
+
     return render_template('dashboard.html', owned_files=owned_files, shared_files=shared_files)
 
-# /encrypt route is UNCHANGED (logic is the same)
+
 @app.route('/encrypt', methods=['POST'])
 @login_required
 def encrypt():
@@ -177,12 +188,12 @@ def encrypt():
     if not all([file, password, algorithm]):
         flash('Missing file, password, or algorithm', 'error')
         return redirect(url_for('dashboard'))
-    
+
     file_data = file.read()
     start_time = time.perf_counter()
     salt = get_random_bytes(SALT_SIZE)
     key = get_key_from_password(password, salt, algorithm)
-    
+
     if algorithm in ['AES', 'DES']:
         iv = get_random_bytes(IV_SIZES[algorithm])
         CipherClass = AES if algorithm == 'AES' else DES
@@ -202,16 +213,16 @@ def encrypt():
         'operation': 'Encryption',
         'algorithm': algorithm,
         'time': end_time - start_time,
-        'size': len(final_data) 
+        'size': len(final_data)
     }
-    
+
     original_filename = file.filename
-    stored_filename = f"{uuid.uuid4().hex}.enc" 
+    stored_filename = f"{uuid.uuid4().hex}.enc"
     output_path = os.path.join(app.config['UPLOAD_FOLDER'], stored_filename)
-    
+
     with open(output_path, 'wb') as f_out:
         f_out.write(final_data)
-        
+
     new_file_record = SecureFile(
         original_filename=original_filename,
         stored_filename=stored_filename,
@@ -221,7 +232,7 @@ def encrypt():
     )
     db.session.add(new_file_record)
     db.session.commit()
-        
+
     session['last_metrics'] = metrics
     session['last_filename'] = stored_filename
 
@@ -235,7 +246,7 @@ def encrypt():
         'output_size_bytes': metrics['size'],
         'original_filename': original_filename
     }
-    # We start a new thread so the user doesn't wait for the file to be written
+    # new thread for parralel
     threading.Thread(target=log_performance, args=(log_data,)).start()
     return redirect(url_for('results'))
 
@@ -249,28 +260,28 @@ def decrypt(file_id):
     # User must be the owner OR the file must be shared with them.
     is_owner = file_record.user_id == current_user.id
     is_shared = file_record in current_user.files_shared_with_me
-    
+
     if not is_owner and not is_shared:
-        abort(403) # Forbidden
+        abort(403)  # Forbidden
 
     # --- Decryption logic remains the same ---
     password = request.form.get('password')
     algorithm = file_record.algorithm_used
-    
+
     if not password:
         flash('Password is required.', 'error')
         return redirect(url_for('dashboard'))
 
-#    try:
-#        encrypted_file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_record.stored_filename)
-#        with open(encrypted_file_path, 'rb') as f_in:
-#            encrypted_data_with_salt = f_in.read()
-#    except FileNotFoundError:
-#        flash('Error: File not found on server.', 'error')
-#        if is_owner: # Only owner can delete a broken record
-#            db.session.delete(file_record)
-#            db.session.commit()
-#        return redirect(url_for('dashboard'))
+    #    try:
+    #        encrypted_file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_record.stored_filename)
+    #        with open(encrypted_file_path, 'rb') as f_in:
+    #            encrypted_data_with_salt = f_in.read()
+    #    except FileNotFoundError:
+    #        flash('Error: File not found on server.', 'error')
+    #        if is_owner: # Only owner can delete a broken record
+    #            db.session.delete(file_record)
+    #            db.session.commit()
+    #        return redirect(url_for('dashboard'))
 
     encrypted_data_with_salt = file_record.encrypted_data
     start_time = time.perf_counter()
@@ -279,7 +290,7 @@ def decrypt(file_id):
         key = get_key_from_password(password, salt, algorithm)
         if algorithm in ['AES', 'DES']:
             iv_size = IV_SIZES[algorithm]
-            iv = encrypted_data_with_salt[SALT_SIZE : SALT_SIZE + iv_size]
+            iv = encrypted_data_with_salt[SALT_SIZE: SALT_SIZE + iv_size]
             ciphertext = encrypted_data_with_salt[SALT_SIZE + iv_size:]
             CipherClass = AES if algorithm == 'AES' else DES
             cipher = CipherClass.new(key, CipherClass.MODE_CBC, iv)
@@ -304,10 +315,10 @@ def decrypt(file_id):
     output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
     with open(output_path, 'wb') as f_out:
         f_out.write(decrypted_data)
-        
+
     session['last_metrics'] = metrics
     session['last_filename'] = output_filename
-    
+
     log_data = {
         'timestamp': datetime.datetime.now().isoformat(),
         'user_id': current_user.id,
@@ -318,13 +329,12 @@ def decrypt(file_id):
         'output_size_bytes': metrics['size'],
         'original_filename': file_record.original_filename
     }
-    # Start the logging in a background thread
+    # thread start
     threading.Thread(target=log_performance, args=(log_data,)).start()
 
     return redirect(url_for('results'))
 
 
-# /results route is UNCHANGED
 @app.route('/results')
 @login_required
 def results():
@@ -352,13 +362,13 @@ def download_file(filename):
         file_record = SecureFile.query.filter_by(stored_filename=filename).first()
         if not file_record:
             abort(404)
-            
+
         is_owner = file_record.user_id == current_user.id
         is_shared = file_record in current_user.files_shared_with_me
-        
+
         if not is_owner and not is_shared:
-            abort(403) # Forbidden
-            
+            abort(403)  # Forbidden
+
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
 
@@ -388,7 +398,7 @@ def share_file(file_id):
             file_record.users_shared_with.append(user_to_share)
             db.session.commit()
             flash(f'File successfully shared with {user_to_share.username}.', 'success')
-            
+
         return redirect(url_for('share_file', file_id=file_id))
 
     # GET request: Show the sharing page

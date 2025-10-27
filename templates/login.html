@@ -4,34 +4,120 @@
     <meta charset="UTF-8">
     <title>Login</title>
     <style>
-        /* 1. Get rid of default browser margins and set full height */
+
+        .animated-button {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 16px 36px;
+          border: 4px solid;
+          border-color: transparent;
+          font-size: 16px;
+          background-color: inherit;
+          border-radius: 100px;
+          font-weight: 600;
+          color: #ffffff;
+          box-shadow: 0 0 0 2px #ffffff;
+          cursor: pointer;
+          overflow: hidden;
+          transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .animated-button svg {
+          position: absolute;
+          width: 24px;
+          fill: #ffffff;
+          z-index: 9;
+          transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .animated-button .arr-1 {
+          right: 16px;
+        }
+
+        .animated-button .arr-2 {
+          left: -25%;
+        }
+
+        .animated-button .circle {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 20px;
+          height: 20px;
+          background-color: #ffffff;
+          border-radius: 50%;
+          opacity: 0;
+          transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .animated-button .text {
+          position: relative;
+          z-index: 1;
+          transform: translateX(-12px);
+          transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .animated-button:hover {
+          box-shadow: 0 0 0 12px transparent;
+          color: #E72E40;
+          border-radius: 12px;
+        }
+
+        .animated-button:hover .arr-1 {
+          right: -25%;
+        }
+
+        .animated-button:hover .arr-2 {
+          left: 16px;
+        }
+
+        .animated-button:hover .text {
+          transform: translateX(12px);
+        }
+
+        .animated-button:hover svg {
+          fill: #E72E40;
+        }
+
+        .animated-button:active {
+          scale: 0.95;
+          box-shadow: 0 0 0 4px #ffffff;
+        }
+
+        .animated-button:hover .circle {
+          width: 220px;
+          height: 220px;
+          opacity: 1;
+        }
+
+
         body, html {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* Prevents scrollbars */
-            font-family: Muller, sans-serif; /* Use a fallback */
+            overflow: hidden;
+            font-family: Muller, sans-serif;
         }
 
-        /* 2. Create the main flex container */
         .main-container {
             display: flex;
             width: 100vw;
             height: 100vh;
         }
 
-        /* 3. Style the left (red) panel */
         .left-panel {
-            width: 913px; /* Fixed width based on design */
+            width: 913px;
             height: 100%;
             background: #E72E40;
-            position: relative; /* Anchor for the images */
+            position: relative;
             overflow: hidden;
-            flex-shrink: 0; /* Don't let this panel shrink */
+            flex-shrink: 0;
         }
-        
-        /* Keep images positioned as they were, relative to the left panel */
+
         .left-panel img:nth-of-type(1) {
             width: 784.46px; height: 829.64px; left: 65px; top: 97px; position: absolute;
         }
@@ -40,29 +126,27 @@
         }
 
 
-        /* 4. Style the right (grey) panel */
         .right-panel {
-            flex-grow: 1; /* This makes it fill the REST of the space */
+            flex-grow: 1;
             height: 100%;
             background: #DBDAE7;
-            position: relative; /* Anchor for the footer */
-            
-            /* Center all content inside it */
+            position: relative;
+
             display: flex;
-            flex-direction: column; /* Stack title, form, footer */
-            justify-content: center;
+            flex-direction: column;
+            justify-content: flex-start;
             align-items: center;
-            padding: 20px; /* Add some spacing */
+
+            padding: 20px;
             box-sizing: border-box;
-            overflow-y: auto; /* Allow scrolling if content is too tall */
+            overflow-y: auto;
         }
 
-        /* 5. Style the content block */
         .login-content {
-            /* This holds the title and the form */
             display: flex;
             flex-direction: column;
             align-items: center;
+            margin: auto 0;
         }
 
         .title {
@@ -73,10 +157,9 @@
             font-family: 'LEMON MILK', sans-serif;
             font-weight: 700;
             word-wrap: break-word;
-            margin-bottom: 40px; /* Space between title and form */
+            margin-bottom: 40px;
         }
-        
-        /* 6. Rebuild the form with modern CSS */
+
         .login-form {
             width: 393px;
             background: #E72E40;
@@ -85,7 +168,7 @@
             box-sizing: border-box;
             color: white;
         }
-        
+
         .login-form h2 {
             text-align: center;
             color: white;
@@ -94,13 +177,13 @@
             font-weight: 700;
             word-wrap: break-word;
             margin-top: 0;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
         }
 
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-group label {
             font-size: 20px;
             font-family: Muller, sans-serif;
@@ -108,9 +191,9 @@
             margin-bottom: 5px;
             display: block;
         }
-        
+
         .form-group input {
-            width: 100%; /* Was 296px, 100% is better */
+            width: 100%;
             height: 57px;
             background: #D9D9D9;
             border-radius: 8px;
@@ -134,8 +217,8 @@
             word-wrap: break-word;
             text-decoration: none;
         }
-        
-        .submit-button {
+
+        .submit-button, animated-button {
             width: 203px;
             height: 63px;
             background: #D9D9D9;
@@ -157,18 +240,20 @@
         }
 
         .footer {
-            position: absolute;
-            bottom: 10px; /* Was top: 1004px... */
-            right: 20px; /* Position in the corner */
+            position: static;
+            margin-top: auto;
+            align-self: flex-end;
             text-align: center;
             color: #E72E40;
             font-size: 20px;
             font-family: Muller, sans-serif;
             font-weight: 250;
             word-wrap: break-word;
+            padding-top: 10px;
+            padding-right: 0;
+            padding-bottom: 0;
         }
-        
-        /* Flash messages styling */
+
         .flash {
             width: 100%;
             padding: 10px;
@@ -181,22 +266,44 @@
         }
         .error { background-color: #E72E40; color: white; }
         .success { background-color: #d4edda; color: #155724; }
-        
+
+
+        .button-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 20px;
+          margin-top: 24px;
+        }
+
+        /* Keep the register link simple and white */
+        .register-link a {
+          text-decoration: none;
+          font-weight: 600;
+          color: white;
+          font-size: 16px;
+          transition: opacity 0.3s ease;
+        }
+
+        .register-link a:hover {
+          opacity: 0.8;
+        }
+
+
     </style>
 </head>
 <body>
     <div class="main-container">
-        
+
         <div class="left-panel">
             <img src="{{ url_for('static', filename='login.png') }}" alt="Login background art" />
             <img src="{{ url_for('static', filename='login2.png')}}" alt="Crown graphic" />
         </div>
-        
+
         <div class="right-panel">
             <div class="login-content">
-                
-                <div class="title">golshi’s<br/>encryptor</div>
 
+                <div class="title">golshi’s<br/>encryptor</div>
                 {% with messages = get_flashed_messages(with_categories=true) %}
                   {% if messages %}
                     {% for category, message in messages %}
@@ -206,27 +313,45 @@
                 {% endwith %}
 
                 <form action="{{ url_for('login') }}" method="post" class="login-form">
-                    <h2>login</h2>
-                    
+                    <h2>LOGIN</h2>
+
                     <div class="form-group">
                         <label for="username">Username</label>
                         <input type="text" name="username" id="username" required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="password">Password</label>
                         <input type="password" name="password" id="password" required>
                     </div>
-                    
+
                     <div class="form-links">
                         <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
                     </div>
-                    
-                    <button type="submit" class="submit-button">login</button>
-                    
-                    <div class="register-link">
+
+                    <div class="button-row">
+                      <!-- Login Button -->
+                      <button type="submit" class="animated-button login-button">
+                        <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg">
+                          <path
+                            d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
+                          ></path>
+                        </svg>
+                        <span class="text">Login</span>
+                        <span class="circle"></span>
+                        <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg">
+                          <path
+                            d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
+                          ></path>
+                        </svg>
+                      </button>
+
+                      <!-- Register Link -->
+                      <div class="register-link">
                         <a href="{{ url_for('register') }}">Register here!</a>
+                      </div>
                     </div>
+
                 </form>
             </div>
 
