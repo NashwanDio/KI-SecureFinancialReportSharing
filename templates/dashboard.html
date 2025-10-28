@@ -99,11 +99,10 @@
       width: 100%;
       height: 100%;
       font-family: Muller, sans-serif;
-      overflow: hidden; /* prevent window scroll */
+      overflow: hidden;
       background: #DBDAE7;
     }
 
-    /* Full layout container */
     .main-container {
       display: flex;
       height: 100vh;
@@ -134,13 +133,13 @@
     /* Middle content area */
     .content {
       flex-grow: 1;
-      height: 100vh;              /* full height to fill between panels */
-      overflow-y: auto;           /* scroll only inside here */
+      height: 100vh;              
+      overflow-y: auto;           
       padding: 30px 40px;
       box-sizing: border-box;
       background: #DBDAE7;
-      scrollbar-width: thin;      /* optional: make scrollbar neat */
-      scrollbar-color: #E72E40 #f0f0f0; /* red scrollbar thumb, light bg */
+      scrollbar-width: thin;      
+      scrollbar-color: #E72E40 #f0f0f0;
     }
     .content::-webkit-scrollbar {
       width: 10px;
@@ -261,7 +260,6 @@
       background-color: #e72e40b0;
     }
 
-    /* Flash messages */
     .flash {
       padding: 10px;
       margin-bottom: 15px;
@@ -273,7 +271,6 @@
     .success { background-color: #d4edda; color: #155724; }
     .info { background-color: #cce5ff; color: #004085; }
 
-    /* Footer */
     .footer {
       text-align: center;
       color: #E72E40;
@@ -282,7 +279,7 @@
       font-weight: 250;
       margin-top: 50px;
     }
-    /* Slightly taller card for better spacing */
+
     .file-item {
       align-items: flex-start;
       padding: 20px;
@@ -300,7 +297,7 @@
     .action-row {
       display: flex;
       gap: 10px;
-      flex-wrap: wrap; /* responsive on smaller screens */
+      flex-wrap: wrap;
     }
 
     /* Keep input nicely aligned */
@@ -310,12 +307,11 @@
     }
     .file-info {
       max-width: 100%;
-      word-wrap: break-word;        /* allow wrapping */
-      overflow-wrap: break-word;    /* modern fallback */
-      white-space: normal;          /* allow multi-line text */
+      word-wrap: break-word;        
+      overflow-wrap: break-word;    
+      white-space: normal;          
     }
 
-    /* Ensure filename and meta stack nicely if long */
     .file-info .filename {
       display: block;
       margin-bottom: 4px;
@@ -326,23 +322,23 @@
       display: block;
       color: #555;
       line-height: 1.4;
-      word-break: keep-all;         /* keeps words whole */
+      word-break: keep-all;
     }
 
     .inline-actions {
       display: flex;
       align-items: center;
       gap: 12px;
-      flex-wrap: wrap;            /* will wrap neatly on very narrow screens */
+      flex-wrap: wrap;
     }
 
     .inline-actions input[type="password"] {
-      width: 220px;               /* adjust as you like */
-      margin: 0;                  /* override generic margin */
+      width: 220px;               
+      margin: 0;                  
     }
 
     .inline-actions .animated-button {
-      text-decoration: none;      /* for consistency when <a> used elsewhere */
+      text-decoration: none;      
       display: inline-flex;
     }
 
