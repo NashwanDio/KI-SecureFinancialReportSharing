@@ -9,20 +9,17 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# Crypto imports
 from Crypto.Cipher import AES, DES, ARC4
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
 
-# --- App Setup ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- Extension Setup ---
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -58,14 +55,13 @@ def log_performance(log_data):
             writer = csv.DictWriter(f, fieldnames=LOG_HEADERS)
 
             if not file_exists:
-                writer.writeheader()  # header if needed
+                writer.writeheader()
 
             writer.writerow(log_data)
 
 
-# --- Database Models ---
+# Database Models
 
-# NEW: Association Table for Many-to-Many sharing
 file_shares = db.Table('file_shares',
                        db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
                        db.Column('file_id', db.Integer, db.ForeignKey('secure_file.id'), primary_key=True)
@@ -76,7 +72,6 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    # file owner
     files = db.relationship('SecureFile', backref='owner', lazy=True)
 
     def set_password(self, password):
@@ -93,11 +88,8 @@ class SecureFile(db.Model):
     algorithm_used = db.Column(db.String(10), nullable=False)
     upload_timestamp = db.Column(db.DateTime, server_default=db.func.now())
     encrypted_data = db.Column(db.LargeBinary, nullable=False)
-    # OWNER
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # NEW: Relationship to see who this file is shared with
-    # many-to-many
     users_shared_with = db.relationship('User', secondary=file_shares,
                                         lazy='dynamic',
                                         backref=db.backref('files_shared_with_me', lazy='dynamic'))
@@ -108,7 +100,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-# --- Auth Routes  ---
+# Auth Routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -157,7 +149,7 @@ def logout():
     return redirect(url_for('login'))
 
 
-# --- Core App Routes ---
+# Core App Routes
 
 @app.route('/')
 def index():
@@ -169,10 +161,7 @@ def index():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # UPDATED: We now fetch two separate lists
-    # 1. Files the user OWNS
     owned_files = SecureFile.query.filter_by(user_id=current_user.id).order_by(SecureFile.upload_timestamp.desc()).all()
-    # 2. Files SHARED WITH the user
     shared_files = current_user.files_shared_with_me.order_by(SecureFile.upload_timestamp.desc()).all()
 
     return render_template('dashboard.html', owned_files=owned_files, shared_files=shared_files)
@@ -181,7 +170,6 @@ def dashboard():
 @app.route('/encrypt', methods=['POST'])
 @login_required
 def encrypt():
-    # --- Get form data ---
     file = request.files.get('file')
     password = request.form.get('password')
     algorithm = request.form.get('algorithm')
@@ -246,7 +234,6 @@ def encrypt():
         'output_size_bytes': metrics['size'],
         'original_filename': original_filename
     }
-    # new thread for parralel
     threading.Thread(target=log_performance, args=(log_data,)).start()
     return redirect(url_for('results'))
 
@@ -256,15 +243,12 @@ def encrypt():
 def decrypt(file_id):
     file_record = SecureFile.query.get_or_404(file_id)
 
-    # --- UPDATED: CRITICAL Security Check ---
-    # User must be the owner OR the file must be shared with them.
     is_owner = file_record.user_id == current_user.id
     is_shared = file_record in current_user.files_shared_with_me
 
     if not is_owner and not is_shared:
-        abort(403)  # Forbidden
+        abort(403) 
 
-    # --- Decryption logic remains the same ---
     password = request.form.get('password')
     algorithm = file_record.algorithm_used
 
@@ -278,7 +262,7 @@ def decrypt(file_id):
     #            encrypted_data_with_salt = f_in.read()
     #    except FileNotFoundError:
     #        flash('Error: File not found on server.', 'error')
-    #        if is_owner: # Only owner can delete a broken record
+    #        if is_owner: 
     #            db.session.delete(file_record)
     #            db.session.commit()
     #        return redirect(url_for('dashboard'))
@@ -329,7 +313,6 @@ def decrypt(file_id):
         'output_size_bytes': metrics['size'],
         'original_filename': file_record.original_filename
     }
-    # thread start
     threading.Thread(target=log_performance, args=(log_data,)).start()
 
     return redirect(url_for('results'))
@@ -353,12 +336,9 @@ def download_file(filename):
     This route now handles both encrypted and decrypted files.
     """
     if filename.startswith('decrypted_'):
-        # This is a temporary decrypted file. The user must have just
-        # successfully decrypted it, so we'll allow the download.
         pass
     else:
-        # --- UPDATED: CRITICAL Security Check ---
-        # This is a raw .enc file. Check if user owns it or has share access.
+        # Check if user owns it or has share access.
         file_record = SecureFile.query.filter_by(stored_filename=filename).first()
         if not file_record:
             abort(404)
@@ -367,12 +347,12 @@ def download_file(filename):
         is_shared = file_record in current_user.files_shared_with_me
 
         if not is_owner and not is_shared:
-            abort(403)  # Forbidden
+            abort(403)
 
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
 
-# --- NEW: Share Management Routes ---
+# Share Management Routes
 
 @app.route('/share/<int:file_id>', methods=['GET', 'POST'])
 @login_required
@@ -394,7 +374,7 @@ def share_file(file_id):
         elif file_record in user_to_share.files_shared_with_me:
             flash(f'File already shared with {user_to_share.username}.', 'info')
         else:
-            # Add the share relationship
+            # Add share relationship
             file_record.users_shared_with.append(user_to_share)
             db.session.commit()
             flash(f'File successfully shared with {user_to_share.username}.', 'success')
