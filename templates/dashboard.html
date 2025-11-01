@@ -1,507 +1,549 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>My Dashboard</title>
-  <style>
+  <head>
+    <meta charset="UTF-8" />
+    <title>My Dashboard</title>
+    <style>
+      .file-list .filename {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 250px;
+        display: block;
+        font-weight: bold;
+        font-size: 1.1em;
+        color: #333;
+        margin-bottom: 4px;
+        line-height: 1.4;
+      }
 
-        .animated-button {
-          position: relative;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 16px 36px;
-          border: 4px solid;
-          border-color: transparent;
-          font-size: 16px;
-          background-color: inherit;
-          border-radius: 100px;
-          font-weight: 600;
-          color: #E72E40;
-          box-shadow: 0 0 0 2px #E72E40;
-          cursor: pointer;
-          overflow: hidden;
-          transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
+      .animated-button {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 16px 36px;
+        border: 4px solid;
+        border-color: transparent;
+        font-size: 16px;
+        background-color: inherit;
+        border-radius: 100px;
+        font-weight: 600;
+        color: #e72e40;
+        box-shadow: 0 0 0 2px #e72e40;
+        cursor: pointer;
+        overflow: hidden;
+        transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        text-decoration: none;
+        display: inline-flex;
+      }
 
-        .animated-button svg {
-          position: absolute;
-          width: 24px;
-          fill: #E72E40;
-          z-index: 9;
-          transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-        }
+      .animated-button svg {
+        position: absolute;
+        width: 24px;
+        fill: #e72e40;
+        z-index: 9;
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+      }
 
-        .animated-button .arr-1 {
-          right: 16px;
-        }
+      .animated-button .arr-1 {
+        right: 16px;
+      }
 
-        .animated-button .arr-2 {
-          left: -25%;
-        }
+      .animated-button .arr-2 {
+        left: -25%;
+      }
 
-        .animated-button .circle {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 20px;
-          height: 20px;
-          background-color: #E72E40;
-          border-radius: 50%;
-          opacity: 0;
-          transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-        }
+      .animated-button .circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        background-color: #e72e40;
+        border-radius: 50%;
+        opacity: 0;
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+      }
 
-        .animated-button .text {
-          position: relative;
-          z-index: 1;
-          transform: translateX(-12px);
-          transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-        }
+      .animated-button .text {
+        color: #e72e40;
+        font-family: "LEMON MILK", sans-serif;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+        transform: translateX(-12px);
+        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+      }
 
-        .animated-button:hover {
-          box-shadow: 0 0 0 12px transparent;
-          color: #ffffff;
-          border-radius: 12px;
-        }
+      .animated-button:hover {
+        box-shadow: 0 0 0 12px transparent;
+        color: #ffffff;
+        border-radius: 12px;
+      }
 
-        .animated-button:hover .arr-1 {
-          right: -25%;
-        }
+      .animated-button:hover .arr-1 {
+        right: -25%;
+      }
 
-        .animated-button:hover .arr-2 {
-          left: 16px;
-        }
+      .animated-button:hover .arr-2 {
+        left: 16px;
+      }
 
-        .animated-button:hover .text {
-          transform: translateX(12px);
-        }
+      .animated-button:hover .text {
+        transform: translateX(12px);
+      }
 
-        .animated-button:hover svg {
-          fill: #ffffff;
-        }
+      .animated-button:hover svg {
+        fill: #ffffff;
+      }
 
-        .animated-button:active {
-          scale: 0.95;
-          box-shadow: 0 0 0 4px #E72E40;
-        }
+      .animated-button:active {
+        scale: 0.95;
+        box-shadow: 0 0 0 4px #e72e40;
+      }
 
-        .animated-button:hover .circle {
-          width: 220px;
-          height: 220px;
-          opacity: 1;
-        }
+      .animated-button:hover .circle {
+        width: 220px;
+        height: 220px;
+        opacity: 1;
+      }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      font-family: Muller, sans-serif;
-      overflow: hidden;
-      background: #DBDAE7;
-    }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        font-family: Muller, sans-serif;
+        overflow: hidden;
+        background: #dbdae7;
+      }
 
-    .main-container {
-      display: flex;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-    }
+      .main-container {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+      }
 
-    /* Left splash panel */
-    .left-panel, .right-panel {
-      width: 25%;
-      height: 100%;
-      position: relative;
-      flex-shrink: 0;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
+      .left-panel,
+      .right-panel {
+        width: 25%;
+        height: 100%;
+        position: relative;
+        flex-shrink: 0;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
 
-    .left-panel {
-      background-image: url("{{ url_for('static', filename='goldship.png') }}");
+      .left-panel {
+        background-image: url("{{ url_for('static', filename='goldship.png') }}");
         background-size: 100%;
-    }
+      }
 
-    .right-panel {
-      background-image: url("{{ url_for('static', filename='kitasan.png') }}");
+      .right-panel {
+        background-image: url("{{ url_for('static', filename='kitasan.png') }}");
         background-size: 75%;
-    }
+      }
 
-    /* Middle content area */
-    .content {
-      flex-grow: 1;
-      height: 100vh;              
-      overflow-y: auto;           
-      padding: 30px 40px;
-      box-sizing: border-box;
-      background: #DBDAE7;
-      scrollbar-width: thin;      
-      scrollbar-color: #E72E40 #f0f0f0;
-    }
-    .content::-webkit-scrollbar {
-      width: 10px;
-    }
-    .content::-webkit-scrollbar-track {
-      background: #f0f0f0;
-    }
-    .content::-webkit-scrollbar-thumb {
-      background-color: #E72E40;
-      border-radius: 10px;
-      border: 2px solid #f0f0f0;
-    }
+      .content {
+        flex-grow: 1;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 30px 40px;
+        box-sizing: border-box;
+        background: #dbdae7;
+        scrollbar-width: thin;
+        scrollbar-color: #e72e40 #f0f0f0;
+      }
+      .content::-webkit-scrollbar {
+        width: 10px;
+      }
+      .content::-webkit-scrollbar-track {
+        background: #f0f0f0;
+      }
+      .content::-webkit-scrollbar-thumb {
+        background-color: #e72e40;
+        border-radius: 10px;
+        border: 2px solid #f0f0f0;
+      }
 
-    /* Header */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-    }
-    .header h1 {
-      color: #E72E40;
-      font-family: 'LEMON MILK', sans-serif;
-      font-weight: 700;
-      margin: 0;
-    }
-    .header a {
-      text-decoration: none;
-      color: #E72E40;
-      font-family: 'LEMON MILK', sans-serif;
-      font-weight: 700;
-      font-size: 20px;
-    }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+      .header h1,
+      .header a {
+        color: #e72e40;
+        font-family: "LEMON MILK", sans-serif;
+        font-weight: 700;
+        margin: 0;
+        font-size: 20px;
+      }
+      .header a {
+        text-decoration: none;
+      }
 
-    /* Card container */
-    .container {
-      background: white;
-      border: 1px solid #E72E40;
-      padding: 25px;
-      border-radius: 18px;
-      margin-bottom: 30px;
-      box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
-    }
+      .container {
+        background: white;
+        border: 1px solid #e72e40;
+        padding: 25px;
+        border-radius: 18px;
+        margin-bottom: 30px;
+        box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
+      }
 
-    h2 {
-      color: #E72E40;
-      font-family: 'LEMON MILK', sans-serif;
-      font-weight: 700;
-    }
+      h2 {
+        color: #e72e40;
+        font-family: "LEMON MILK", sans-serif;
+        font-weight: 700;
+      }
 
-    label {
-      color: #E72E40;
-      font-family: 'LEMON MILK', sans-serif;
-      font-size: 1.1em;
-    }
+      label {
+        color: #e72e40;
+        font-family: "LEMON MILK", sans-serif;
+        font-size: 1.1em;
+      }
 
-    select, input[type="file"], input[type="password"], input[type="text"] {
-      width: 95%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #E72E40;
-      background: #fdfdfd;
-      margin-top: 5px;
-    }
+      select,
+      input[type="file"],
+      input[type="password"],
+      input[type="text"] {
+        width: 95%;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #e72e40;
+        background: #fdfdfd;
+        margin-top: 5px;
+      }
 
-    button, a.button {
-      padding: 10px 15px;
-      background-color: #E72E40;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-family: 'LEMON MILK', sans-serif;
-      font-weight: 700;
-      text-decoration: none;
-      display: inline-block;
-    }
+      button,
+      a.button {
+        padding: 10px 15px;
+        background-color: #e72e40;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-family: "LEMON MILK", sans-serif;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-block;
+      }
 
-    .file-list { list-style: none; padding: 0; margin: 0; }
-    .file-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px;
-      border: 1px solid #eee;
-      border-radius: 5px;
-      margin-bottom: 10px;
-    }
+      .file-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 20px;
+        border: 1px solid #eee;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        min-height: 110px;
+      }
 
-    .file-info .filename {
-      font-weight: bold;
-      font-size: 1.1em;
-      color: #333;
-    }
+      .file-info {
+        max-width: 100%;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+      }
 
-    .file-info .meta {
-      font-size: 0.9em;
-      color: #555;
-    }
+      .file-info .meta {
+        font-size: 0.9em;
+        color: #555;
+        display: block;
+        line-height: 1.4;
+        word-break: keep-all;
+      }
 
-    .file-actions {
-      display: flex;
-      align-items: center;
-    }
+      .file-actions {
+        display: flex;
+        align-items: center;
+      }
+      .flash {
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        text-align: center;
+        font-weight: 700;
+      }
+      .error {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .success {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .info {
+        background-color: #cce5ff;
+        color: #004085;
+      }
 
-    .file-actions input[type="password"] {
-      width: 150px;
-      margin-right: 10px;
-    }
+      .footer {
+        text-align: center;
+        color: #e72e40;
+        font-size: 20px;
+        font-family: Muller, sans-serif;
+        font-weight: 250;
+        margin-top: 50px;
+      }
 
-    .decrypt-btn, .share-btn {
-      background-color: #E72E40;
-      font-size: 0.9em;
-    }
+      .decrypt-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .action-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .decrypt-form input[type="password"] {
+        width: 100%;
+        margin: 0;
+      }
 
-    .share-btn {
-      margin-left: 10px;
-      background-color: #e72e40b0;
-    }
+      .inline-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .inline-actions input[type="password"] {
+        width: 220px;
+        margin: 0;
+      }
+    </style>
+  </head>
 
-    .flash {
-      padding: 10px;
-      margin-bottom: 15px;
-      border-radius: 5px;
-      text-align: center;
-      font-weight: 700;
-    }
-    .error { background-color: #f8d7da; color: #721c24; }
-    .success { background-color: #d4edda; color: #155724; }
-    .info { background-color: #cce5ff; color: #004085; }
+  <body>
+    <div class="main-container">
+      <div class="left-panel"></div>
 
-    .footer {
-      text-align: center;
-      color: #E72E40;
-      font-size: 20px;
-      font-family: Muller, sans-serif;
-      font-weight: 250;
-      margin-top: 50px;
-    }
+      <div class="content">
+        <div class="header">
+          <h1>welcome {{ current_user.username }}!</h1>
+          <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
 
-    .file-item {
-      align-items: flex-start;
-      padding: 20px;
-      min-height: 110px;
-    }
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %} {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
 
-    /* Stack input above buttons */
-    .decrypt-form {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    /* Make buttons appear on one row */
-    .action-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    /* Keep input nicely aligned */
-    .decrypt-form input[type="password"] {
-      width: 100%;
-      margin: 0;
-    }
-    .file-info {
-      max-width: 100%;
-      word-wrap: break-word;        
-      overflow-wrap: break-word;    
-      white-space: normal;          
-    }
-
-    .file-info .filename {
-      display: block;
-      margin-bottom: 4px;
-      line-height: 1.4;
-    }
-
-    .file-info .meta {
-      display: block;
-      color: #555;
-      line-height: 1.4;
-      word-break: keep-all;
-    }
-
-    .inline-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .inline-actions input[type="password"] {
-      width: 220px;               
-      margin: 0;                  
-    }
-
-    .inline-actions .animated-button {
-      text-decoration: none;      
-      display: inline-flex;
-    }
-
-
-  </style>
-</head>
-
-<body>
-  <div class="main-container">
-    <div class="left-panel"></div>
-
-    <div class="content">
-      <div class="header">
-        <h1>welcome {{ current_user.username }}!</h1>
-        <a href="{{ url_for('logout') }}">Logout</a>
-      </div>
-
-      {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-      {% endwith %}
-
-      <!-- Encrypt -->
-      <div class="container">
-        <h2>Encrypt a New File</h2>
-        <form action="/encrypt" method="post" enctype="multipart/form-data">
-          <label for="file">Choose a file:</label>
-          <input type="file" name="file" id="file" required>
-          <br><br>
-          <label for="password_encrypt">Set a Key (Password):</label>
-          <input type="password" name="password" id="password_encrypt" required>
-          <br><br>
-          <label for="algo_encrypt">Encryption Method:</label>
-          <select name="algorithm" id="algo_encrypt">
-            <option value="AES">AES</option>
-            <option value="DES">DES</option>
-            <option value="RC4">RC4</option>
-          </select>
-          <br><br>
+        <!-- Encrypt -->
+        <div class="container">
+          <h2>Encrypt a New File</h2>
+          <form action="/encrypt" method="post" enctype="multipart/form-data">
+            <label for="file">Choose a file:</label>
+            <input type="file" name="file" id="file" required />
+            <br /><br />
+            <label for="password_encrypt">Set a Key (Password):</label>
+            <input
+              type="password"
+              name="password"
+              id="password_encrypt"
+              required
+            />
+            <br /><br />
+            <label for="algo_encrypt">Encryption Method:</label>
+            <select name="algorithm" id="algo_encrypt">
+              <option value="AES">AES</option>
+              <option value="DES">DES</option>
+              <option value="RC4">RC4</option>
+            </select>
+            <br /><br />
             <button type="submit" class="animated-button encrypt-button">
-              <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg">
+              <svg
+                viewBox="0 0 24 24"
+                class="arr-2"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 <path
                   d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
                 ></path>
               </svg>
               <span class="text">Encrypt and Save</span>
               <span class="circle"></span>
-              <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg">
+              <svg
+                viewBox="0 0 24 24"
+                class="arr-1"
+                xmlns="http://www.w3.org/2000/svg"
+              >
                 <path
                   d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
                 ></path>
               </svg>
             </button>
+          </form>
+        </div>
 
-        </form>
-      </div>
+        <!-- My Files -->
+        <div class="container">
+          <h2>My Secure Files</h2>
+          {% if owned_files %}
+          <ul class="file-list">
+            {% for file in owned_files %}
+            <li class="file-item">
+              <div class="file-info">
+                <span class="filename">{{ file.original_filename }}</span>
+                <span class="meta">
+                  Method: {{ file.algorithm_used }} | Uploaded: {{
+                  file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}
+                </span>
+              </div>
 
-      <!-- My Files -->
-      <div class="container">
-      <h2>My Secure Files</h2>
-      {% if owned_files %}
-        <ul class="file-list">
-          {% for file in owned_files %}
-          <li class="file-item">
-            <div class="file-info">
-              <span class="filename">{{ file.original_filename }}</span>
-              <span class="meta">
-                Method: {{ file.algorithm_used }} | Uploaded: {{ file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}
-              </span>
-            </div>
+              <div class="file-actions">
+                <form
+                  action="{{ url_for('decrypt', file_id=file.id) }}"
+                  method="post"
+                  class="decrypt-form"
+                >
+                  <!-- Input row -->
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="Enter Key"
+                    required
+                  />
 
-            <div class="file-actions">
-              <form action="{{ url_for('decrypt', file_id=file.id) }}" method="post" class="decrypt-form">
-                <!-- Input row -->
-                <input type="password" name="password" placeholder="Enter Key" required>
+                  <!-- Animated buttons row -->
+                  <div class="action-row">
+                    <button
+                      type="submit"
+                      class="animated-button decrypt-button"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="arr-2"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
+                        ></path>
+                      </svg>
+                      <span class="text">Decrypt</span>
+                      <span class="circle"></span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="arr-1"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
+                        ></path>
+                      </svg>
+                    </button>
 
-                <!-- Animated buttons row -->
-                <div class="action-row">
-                  <button type="submit" class="animated-button decrypt-button">
-                    <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                      ></path>
-                    </svg>
-                    <span class="text">Decrypt</span>
-                    <span class="circle"></span>
-                    <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                      ></path>
-                    </svg>
-                  </button>
+                    <a
+                      href="{{ url_for('share_file', file_id=file.id) }}"
+                      class="animated-button share-button"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="arr-2"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
+                        ></path>
+                      </svg>
+                      <span class="text">Share</span>
+                      <span class="circle"></span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        class="arr-1"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
+                        ></path>
+                      </svg>
+                    </a>
+                  </div>
+                </form>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p>You haven't encrypted any files yet.</p>
+          {% endif %}
+        </div>
 
-                  <a href="{{ url_for('share_file', file_id=file.id) }}" class="animated-button share-button">
-                    <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                      ></path>
-                    </svg>
-                    <span class="text">Share</span>
-                    <span class="circle"></span>
-                    <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                      ></path>
-                    </svg>
-                  </a>
-                </div>
-              </form>
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>You haven't encrypted any files yet.</p>
-      {% endif %}
-    </div>
-
-
-
-      <!-- Shared Files -->
-      <div class="container">
-        <h2>Files Shared With Me</h2>
-        {% if shared_files %}
+        <!-- Shared Files -->
+        <div class="container">
+          <h2>Files Shared With Me</h2>
+          {% if shared_files %}
           <ul class="file-list">
             {% for file in shared_files %}
             <li class="file-item">
               <div class="file-info">
                 <span class="filename">{{ file.original_filename }}</span>
-                <span class="meta">Method: {{ file.algorithm_used }} | Shared by: <strong>{{ file.owner.username }}</strong></span>
+                <span class="meta"
+                  >Method: {{ file.algorithm_used }} | Shared by:
+                  <strong>{{ file.owner.username }}</strong></span
+                >
               </div>
               <div class="file-actions">
-                <form action="{{ url_for('decrypt', file_id=file.id) }}" method="post" class="inline-actions">
-                  <input type="password" name="password" placeholder="Enter Key" required>
+                <form
+                  action="{{ url_for('decrypt', file_id=file.id) }}"
+                  method="post"
+                  class="inline-actions"
+                >
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="Enter Key"
+                    required
+                  />
                   <button type="submit" class="animated-button decrypt-button">
-                    <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
+                    <svg
+                      viewBox="0 0 24 24"
+                      class="arr-2"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
+                      ></path>
                     </svg>
                     <span class="text">Decrypt</span>
                     <span class="circle"></span>
-                    <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path>
+                    <svg
+                      viewBox="0 0 24 24"
+                      class="arr-1"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
+                      ></path>
                     </svg>
                   </button>
                 </form>
-
-
               </div>
             </li>
             {% endfor %}
           </ul>
-        {% else %}
+          {% else %}
           <p>No files have been shared with you.</p>
-        {% endif %}
+          {% endif %}
+        </div>
+
+        <div class="footer">PT. Pendapat NIlai Wah</div>
       </div>
 
-      <div class="footer">PT. Pendapat NIlai Wah</div>
+      <div class="right-panel"></div>
     </div>
-
-    <div class="right-panel"></div>
-  </div>
-</body>
+  </body>
 </html>
