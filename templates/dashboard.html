@@ -1,8 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>My Dashboard</title>
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block head %}
+    <!-- Styles specific to the dashboard -->
     <style>
       .file-list .filename {
         white-space: nowrap;
@@ -15,6 +16,9 @@
         color: #333;
         margin-bottom: 4px;
         line-height: 1.4;
+      }
+      .file-list .filename-long {
+        max-width: 400px; /* Wider for non-decrypt lists */
       }
 
       .animated-button {
@@ -37,7 +41,6 @@
         text-decoration: none;
         display: inline-flex;
       }
-
       .animated-button svg {
         position: absolute;
         width: 24px;
@@ -45,15 +48,8 @@
         z-index: 9;
         transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
       }
-
-      .animated-button .arr-1 {
-        right: 16px;
-      }
-
-      .animated-button .arr-2 {
-        left: -25%;
-      }
-
+      .animated-button .arr-1 { right: 16px; }
+      .animated-button .arr-2 { left: -25%; }
       .animated-button .circle {
         position: absolute;
         top: 50%;
@@ -66,7 +62,6 @@
         opacity: 0;
         transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
       }
-
       .animated-button .text {
         color: #e72e40;
         font-family: "LEMON MILK", sans-serif;
@@ -76,118 +71,37 @@
         transform: translateX(-12px);
         transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
       }
-
       .animated-button:hover {
         box-shadow: 0 0 0 12px transparent;
         color: #ffffff;
         border-radius: 12px;
       }
-
-      .animated-button:hover .arr-1 {
-        right: -25%;
-      }
-
-      .animated-button:hover .arr-2 {
-        left: 16px;
-      }
-
-      .animated-button:hover .text {
-        transform: translateX(12px);
-      }
-
-      .animated-button:hover svg {
-        fill: #ffffff;
-      }
-
+      .animated-button:hover .arr-1 { right: -25%; }
+      .animated-button:hover .arr-2 { left: 16px; }
+      .animated-button:hover .text { transform: translateX(12px); }
+      .animated-button:hover svg { fill: #ffffff; }
       .animated-button:active {
         scale: 0.95;
         box-shadow: 0 0 0 4px #e72e40;
       }
-
       .animated-button:hover .circle {
         width: 220px;
         height: 220px;
         opacity: 1;
       }
 
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        font-family: Muller, sans-serif;
-        overflow: hidden;
-        background: #dbdae7;
-      }
-
-      .main-container {
-        display: flex;
-        height: 100vh;
-        width: 100vw;
-        overflow: hidden;
-      }
-
-      .left-panel,
-      .right-panel {
-        width: 25%;
-        height: 100%;
-        position: relative;
-        flex-shrink: 0;
-        background-position: center;
-        background-repeat: no-repeat;
-      }
-
-      .left-panel {
-        background-image: url("{{ url_for('static', filename='goldship.png') }}");
-        background-size: 100%;
-      }
-
-      .right-panel {
-        background-image: url("{{ url_for('static', filename='kitasan.png') }}");
-        background-size: 75%;
-      }
-
+      /* Content layout adjustments */
       .content {
-        flex-grow: 1;
-        height: 100vh;
-        overflow-y: auto;
-        padding: 30px 40px;
-        box-sizing: border-box;
-        background: #dbdae7;
-        scrollbar-width: thin;
-        scrollbar-color: #e72e40 #f0f0f0;
-      }
-      .content::-webkit-scrollbar {
-        width: 10px;
-      }
-      .content::-webkit-scrollbar-track {
-        background: #f0f0f0;
-      }
-      .content::-webkit-scrollbar-thumb {
-        background-color: #e72e40;
-        border-radius: 10px;
-        border: 2px solid #f0f0f0;
-      }
-
-      .header {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
+        gap: 30px;
+        width: 100%;
       }
-      .header h1,
-      .header a {
-        color: #e72e40;
-        font-family: "LEMON MILK", sans-serif;
-        font-weight: 700;
-        margin: 0;
-        font-size: 20px;
+      .main-column {
+        flex-grow: 1;
+        max-width: 900px;
+        margin: 0 auto; /* Center the main content */
       }
-      .header a {
-        text-decoration: none;
-      }
-
+      
       .container {
         background: white;
         border: 1px solid #e72e40;
@@ -201,38 +115,50 @@
         color: #e72e40;
         font-family: "LEMON MILK", sans-serif;
         font-weight: 700;
+        margin-top: 0;
       }
-
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
       label {
         color: #e72e40;
         font-family: "LEMON MILK", sans-serif;
         font-size: 1.1em;
+        display: block;
+        margin-bottom: 8px;
       }
-
       select,
       input[type="file"],
       input[type="password"],
       input[type="text"] {
         width: 95%;
+        max-width: 400px;
         padding: 10px;
         border-radius: 8px;
         border: 1px solid #e72e40;
         background: #fdfdfd;
-        margin-top: 5px;
+        font-size: 16px;
       }
-
-      button,
-      a.button {
-        padding: 10px 15px;
-        background-color: #e72e40;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-family: "LEMON MILK", sans-serif;
+      
+      /* --- Visibility Radio Buttons --- */
+      .visibility-group {
+        display: flex;
+        gap: 20px;
+      }
+      .visibility-group label {
+        font-family: Muller, sans-serif;
+        font-size: 16px;
         font-weight: 700;
-        text-decoration: none;
-        display: inline-block;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+      }
+      .visibility-group input[type="radio"] {
+         width: auto;
+         flex-shrink: 0;
       }
 
       .file-list {
@@ -244,32 +170,30 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
         padding: 20px;
         border: 1px solid #eee;
         border-radius: 5px;
         margin-bottom: 10px;
-        min-height: 110px;
+        min-height: 80px;
       }
-
       .file-info {
-        max-width: 100%;
+        flex: 1;
+        min-width: 200px;
         word-wrap: break-word;
-        overflow-wrap: break-word;
-        white-space: normal;
       }
-
       .file-info .meta {
         font-size: 0.9em;
         color: #555;
         display: block;
         line-height: 1.4;
-        word-break: keep-all;
       }
-
       .file-actions {
-        display: flex;
-        align-items: center;
+        flex-shrink: 0;
       }
+      
+      /* Flash messages */
       .flash {
         padding: 10px;
         margin-bottom: 15px;
@@ -277,27 +201,9 @@
         text-align: center;
         font-weight: 700;
       }
-      .error {
-        background-color: #f8d7da;
-        color: #721c24;
-      }
-      .success {
-        background-color: #d4edda;
-        color: #155724;
-      }
-      .info {
-        background-color: #cce5ff;
-        color: #004085;
-      }
-
-      .footer {
-        text-align: center;
-        color: #e72e40;
-        font-size: 20px;
-        font-family: Muller, sans-serif;
-        font-weight: 250;
-        margin-top: 50px;
-      }
+      .error { background-color: #f8d7da; color: #721c24; }
+      .success { background-color: #d4edda; color: #155724; }
+      .info { background-color: #cce5ff; color: #004085; }
 
       .decrypt-form {
         display: flex;
@@ -311,239 +217,300 @@
       }
       .decrypt-form input[type="password"] {
         width: 100%;
+        min-width: 200px;
         margin: 0;
       }
-
-      .inline-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
+      
+      /* New action button styles */
+      .request-btn {
+          font-family: 'LEMON MILK', sans-serif;
+          font-weight: 700;
+          font-size: 14px;
+          padding: 10px 15px;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          background-color: #17a2b8;
+          color: white;
       }
-      .inline-actions input[type="password"] {
-        width: 220px;
-        margin: 0;
+      .request-btn:disabled {
+          background-color: #6c757d;
+          cursor: not-allowed;
+      }
+      .status-pill {
+          font-family: 'LEMON MILK', sans-serif;
+          font-weight: 700;
+          font-size: 14px;
+          padding: 10px 15px;
+          border-radius: 8px;
+          color: #333;
+          background-color: #ffc107;
+      }
+      .status-pill.approved {
+          background-color: #28a745;
+          color: white;
+      }
+      .status-pill.denied {
+          background-color: #dc3545;
+          color: white;
+      }
+      
+      .footer {
+        text-align: center;
+        color: #e72e40;
+        font-size: 20px;
+        font-family: Muller, sans-serif;
+        font-weight: 250;
+        margin-top: 50px;
       }
     </style>
-  </head>
+{% endblock %}
 
-  <body>
-    <div class="main-container">
-      <div class="left-panel"></div>
+{% block content %}
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-      <div class="content">
-        <div class="header">
-          <h1>welcome {{ current_user.username }}!</h1>
-          <a href="{{ url_for('logout') }}">Logout</a>
-        </div>
+    <div class="content">
+        <div class="main-column">
+            <!-- Encrypt -->
+            <div class="container">
+              <h2>Encrypt a New File</h2>
+              <form action="/encrypt" method="post" enctype="multipart/form-data">
+                
+                <div class="form-group">
+                    <label for="file">Choose a file:</label>
+                    <input type="file" name="file" id="file" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="password_encrypt">Set a Key (Password):</label>
+                    <input type="password" name="password" id="password_encrypt" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="algo_encrypt">Encryption Method:</label>
+                    <select name="algorithm" id="algo_encrypt" style="width: 200px;">
+                      <option value="AES">AES</option>
+                      <option value="DES">DES</option>
+                      <option value="RC4">RC4</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Visibility:</label>
+                    <div class="visibility-group">
+                        <label for="vis-public">
+                            <input type="radio" id="vis-public" name="visibility" value="public" checked>
+                            Public (All users can see)
+                        </label>
+                        <label for="vis-private">
+                            <input type="radio" id="vis-private" name="visibility" value="private">
+                            Private (Only friends can see)
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="animated-button encrypt-button">
+                  <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg"><path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path></svg>
+                  <span class="text">Encrypt and Save</span>
+                  <span class="circle"></span>
+                  <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg"><path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path></svg>
+                </button>
+              </form>
+            </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %} {% if
-        messages %} {% for category, message in messages %}
-        <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %} {% endif %} {% endwith %}
-
-        <!-- Encrypt -->
-        <div class="container">
-          <h2>Encrypt a New File</h2>
-          <form action="/encrypt" method="post" enctype="multipart/form-data">
-            <label for="file">Choose a file:</label>
-            <input type="file" name="file" id="file" required />
-            <br /><br />
-            <label for="password_encrypt">Set a Key (Password):</label>
-            <input
-              type="password"
-              name="password"
-              id="password_encrypt"
-              required
-            />
-            <br /><br />
-            <label for="algo_encrypt">Encryption Method:</label>
-            <select name="algorithm" id="algo_encrypt">
-              <option value="AES">AES</option>
-              <option value="DES">DES</option>
-              <option value="RC4">RC4</option>
-            </select>
-            <br /><br />
-            <button type="submit" class="animated-button encrypt-button">
-              <svg
-                viewBox="0 0 24 24"
-                class="arr-2"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                ></path>
-              </svg>
-              <span class="text">Encrypt and Save</span>
-              <span class="circle"></span>
-              <svg
-                viewBox="0 0 24 24"
-                class="arr-1"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                ></path>
-              </svg>
-            </button>
-          </form>
-        </div>
-
-        <!-- My Files -->
-        <div class="container">
-          <h2>My Secure Files</h2>
-          {% if owned_files %}
-          <ul class="file-list">
-            {% for file in owned_files %}
-            <li class="file-item">
-              <div class="file-info">
-                <span class="filename">{{ file.original_filename }}</span>
-                <span class="meta">
-                  Method: {{ file.algorithm_used }} | Uploaded: {{
-                  file.upload_timestamp.strftime('%Y-%m-%d %H:%M') }}
-                </span>
-              </div>
-
-              <div class="file-actions">
-                <form
-                  action="{{ url_for('decrypt', file_id=file.id) }}"
-                  method="post"
-                  class="decrypt-form"
-                >
-                  <!-- Input row -->
-                  <input
-                    type="password"
-                    name="password"
-                    placeholder="Enter Key"
-                    required
-                  />
-
-                  <!-- Animated buttons row -->
-                  <div class="action-row">
-                    <button
-                      type="submit"
-                      class="animated-button decrypt-button"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        class="arr-2"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                        ></path>
-                      </svg>
-                      <span class="text">Decrypt</span>
-                      <span class="circle"></span>
-                      <svg
-                        viewBox="0 0 24 24"
-                        class="arr-1"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                        ></path>
-                      </svg>
-                    </button>
-
-                    <a
-                      href="{{ url_for('share_file', file_id=file.id) }}"
-                      class="animated-button share-button"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        class="arr-2"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                        ></path>
-                      </svg>
-                      <span class="text">Share</span>
-                      <span class="circle"></span>
-                      <svg
-                        viewBox="0 0 24 24"
-                        class="arr-1"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                        ></path>
-                      </svg>
-                    </a>
+            <!-- My Files -->
+            <div class="container">
+              <h2>My Secure Files</h2>
+              {% if owned_files %}
+              <ul class="file-list">
+                {% for file in owned_files %}
+                <li class="file-item">
+                  <div class="file-info">
+                    <span class="filename">{{ file.original_filename }}</span>
+                    <span class="meta">
+                      Method: {{ file.algorithm_used }} | 
+                      Visibility: {% if file.is_public %}Public{% else %}Private{% endif %}
+                    </span>
                   </div>
-                </form>
-              </div>
-            </li>
-            {% endfor %}
-          </ul>
-          {% else %}
-          <p>You haven't encrypted any files yet.</p>
-          {% endif %}
+                  <div class="file-actions">
+                    <form action="{{ url_for('decrypt', file_id=file.id) }}" method="post" class="decrypt-form">
+                      <input type="password" name="password" placeholder="Enter Key" required />
+                      <div class="action-row">
+                        <button type="submit" class="animated-button decrypt-button">
+                          <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg"><path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path></svg>
+                          <span class="text">Decrypt</span>
+                          <span class="circle"></span>
+                          <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg"><path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path></svg>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p>You haven't encrypted any files yet.</p>
+              {% endif %}
+            </div>
+            
+            <!-- === NEW: Files Shared With Me === -->
+            <div class="container">
+              <h2>Files Shared With Me</h2>
+              {% if shared_files %}
+              <ul class="file-list">
+                {% for file in shared_files %}
+                <li class="file-item">
+                  <div class="file-info">
+                    <span class="filename">{{ file.original_filename }}</span>
+                    <span class="meta">
+                      Method: {{ file.algorithm_used }} | 
+                      Owner: <strong>{{ file.owner.username }}</strong>
+                    </span>
+                  </div>
+                  <div class="file-actions">
+                    <form action="{{ url_for('decrypt', file_id=file.id) }}" method="post" class="decrypt-form">
+                      <input type="password" name="password" placeholder="Enter Key" required />
+                      <div class="action-row">
+                        <button type="submit" class="animated-button decrypt-button">
+                          <svg viewBox="0 0 24 24" class="arr-2" xmlns="http://www.w3.org/2000/svg"><path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path></svg>
+                          <span class="text">Decrypt</span>
+                          <span class="circle"></span>
+                          <svg viewBox="0 0 24 24" class="arr-1" xmlns="http://www.w3.org/2000/svg"><path d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"></path></svg>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p>No files have been shared with you yet.</p>
+              {% endif %}
+            </div>
+            
+            <!-- === NEW: Global Public Files === -->
+            <div class="container">
+              <h2>Global Public Files</h2>
+              {% if public_files %}
+              <ul class="file-list">
+                {% for file in public_files %}
+                <li class="file-item file-item-request" data-file-id="{{ file.id }}">
+                  <div class="file-info">
+                    <span class="filename filename-long">{{ file.original_filename }}</span>
+                    <span class="meta">
+                      Method: {{ file.algorithm_used }} | 
+                      Owner: <strong>{{ file.owner.username }}</strong>
+                    </span>
+                  </div>
+                  <div class="file-actions request-action-area">
+                    {% set status = request_status_map.get(file.id) %}
+                    {% if status == 'approved' %}
+                        <span class="status-pill approved">Access Approved</span>
+                    {% elif status == 'pending' %}
+                        <span class="status-pill">Request Pending</span>
+                    {% elif status == 'denied' %}
+                        <span class="status-pill denied">Access Denied</span>
+                    {% else %}
+                        <button class="btn request-btn">Request Access</button>
+                    {% endif %}
+                  </div>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p>No other public files found.</p>
+              {% endif %}
+            </div>
+
+            <!-- === NEW: Friends' Private Files === -->
+            <div class="container">
+              <h2>Friends' Private Files</h2>
+              {% if friends_files %}
+              <ul class="file-list">
+                {% for file in friends_files %}
+                <li class="file-item file-item-request" data-file-id="{{ file.id }}">
+                  <div class="file-info">
+                    <span class="filename filename-long">{{ file.original_filename }}</span>
+                    <span class="meta">
+                      Method: {{ file.algorithm_used }} | 
+                      Owner: <strong>{{ file.owner.username }}</strong>
+                    </span>
+                  </div>
+                  <div class="file-actions request-action-area">
+                    {% set status = request_status_map.get(file.id) %}
+                    {% if status == 'approved' %}
+                        <span class="status-pill approved">Access Approved</span>
+                    {% elif status == 'pending' %}
+                        <span class="status-pill">Request Pending</span>
+                    {% elif status == 'denied' %}
+                        <span class="status-pill denied">Access Denied</span>
+                    {% else %}
+                        <button class="btn request-btn">Request Access</button>
+                    {% endif %}
+                  </div>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p>No private files found from your friends.</p>
+              {% endif %}
+            </div>
+
+            <div class="footer">PT. Pendapat NIlai Wah</div>
         </div>
-
-        <!-- Shared Files -->
-        <div class="container">
-          <h2>Files Shared With Me</h2>
-          {% if shared_files %}
-          <ul class="file-list">
-            {% for file in shared_files %}
-            <li class="file-item">
-              <div class="file-info">
-                <span class="filename">{{ file.original_filename }}</span>
-                <span class="meta"
-                  >Method: {{ file.algorithm_used }} | Shared by:
-                  <strong>{{ file.owner.username }}</strong></span
-                >
-              </div>
-              <div class="file-actions">
-                <form
-                  action="{{ url_for('decrypt', file_id=file.id) }}"
-                  method="post"
-                  class="inline-actions"
-                >
-                  <input
-                    type="password"
-                    name="password"
-                    placeholder="Enter Key"
-                    required
-                  />
-                  <button type="submit" class="animated-button decrypt-button">
-                    <svg
-                      viewBox="0 0 24 24"
-                      class="arr-2"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                      ></path>
-                    </svg>
-                    <span class="text">Decrypt</span>
-                    <span class="circle"></span>
-                    <svg
-                      viewBox="0 0 24 24"
-                      class="arr-1"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M16.1716 10.9999L10.8076 5.63589L12.2218 4.22168L20 11.9999L12.2218 19.778L10.8076 18.3638L16.1716 12.9999H4V10.9999H16.1716Z"
-                      ></path>
-                    </svg>
-                  </button>
-                </form>
-              </div>
-            </li>
-            {% endfor %}
-          </ul>
-          {% else %}
-          <p>No files have been shared with you.</p>
-          {% endif %}
-        </div>
-
-        <div class="footer">PT. Pendapat NIlai Wah</div>
-      </div>
-
-      <div class="right-panel"></div>
     </div>
-  </body>
-</html>
+{% endblock %}
+
+{% block scripts %}
+<!-- NEW JavaScript for the "Request Access" buttons -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.request-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const item = this.closest('.file-item-request');
+            const fileId = item.dataset.fileId;
+            const buttonArea = item.querySelector('.request-action-area');
+            
+            this.disabled = true;
+            this.textContent = 'Sending...';
+            
+            fetch(`/api/request_file_access/${fileId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    buttonArea.innerHTML = `<span class="status-pill">Request Pending</span>`;
+                } else {
+                    // Handle cases where request already exists (e.g., race condition)
+                    if (data.status) {
+                        let statusClass = data.status === 'approved' ? 'approved' : (data.status === 'denied' ? 'denied' : '');
+                        let statusText = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+                        buttonArea.innerHTML = `<span class="status-pill ${statusClass}">${statusText}</span>`;
+                    } else {
+                        button.disabled = false;
+                        button.textContent = 'Request Access';
+                        alert('Error: ' + data.error);
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Fetch error:', err);
+                button.disabled = false;
+                button.textContent = 'Request Access';
+                alert('An error occurred. Please try again.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+

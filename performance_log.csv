@@ -16,3 +16,6 @@ timestamp,user_id,username,operation,algorithm,execution_time_s,output_size_byte
 2025-11-01T11:15:41.474213,4,ariq,Decryption,DES,0.043909899999562185,1727954,decrypted_Lerakoo Logo 2 (2).png
 2025-11-01T11:16:05.914275,1,admin1,Decryption,DES,0.036668700000518584,1727954,decrypted_Lerakoo Logo 2 (2).png
 2025-11-01T11:19:33.173289,1,admin1,Encryption,RC4,0.0006176000006234972,8921,Book1.xlsx
+2025-11-01T13:54:26.991196,1,admin,Encryption,DES,0.10234909999780939,1727984,decrypted_decrypted_Lerakoo Logo 2 (2) (1).png
+2025-11-01T13:55:34.168659,1,admin,Encryption,AES,0.0014048000011825934,45104,gamer-suisei.mp3
+2025-11-01T13:56:36.447082,2,admin2,Encryption,RC4,0.009371699998155236,1766427,KI First Assignment by PT. Pendapat NIlai Wah.pdf
