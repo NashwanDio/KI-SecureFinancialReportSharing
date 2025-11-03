@@ -253,6 +253,18 @@
           transform: translateX(100%);
         }
       }
+      .toast.error {
+        border-left-color: #dc3545;
+      }
+      .toast.error strong {
+        color: #dc3545;
+      }
+      .toast.success {
+        border-left-color: #28a745;
+      }
+      .toast.success strong {
+        color: #28a745;
+      }
       .toast strong {
         color: #e72e40;
       }
@@ -313,6 +325,52 @@
       </div>
     </div>
 
+    <div
+      class="modal confirm-modal"
+      id="confirm-modal"
+      style="
+        width: 450px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.95);
+      "
+    >
+      <div class="modal-header">
+        <span>Confirm Action</span>
+        <span class="close-modal" data-modal="confirm-modal">&times;</span>
+      </div>
+      <div class="modal-body" style="text-align: center">
+        <p
+          id="confirm-modal-text"
+          style="font-size: 1.1em; line-height: 1.5; margin-bottom: 25px"
+        >
+          Are you sure?
+        </p>
+        <div style="display: flex; gap: 10px; justify-content: center">
+          <button
+            class="animated-button"
+            id="confirm-modal-cancel"
+            style="
+              background: #6c757d;
+              box-shadow: 0 0 0 2px #6c757d;
+              flex-basis: 150px;
+            "
+          >
+            <span class="text" style="color: white">Cancel</span>
+            <span class="circle" style="background: white"></span>
+          </button>
+          <button
+            class="animated-button"
+            id="confirm-modal-confirm"
+            style="flex-basis: 150px"
+          >
+            <span class="text">Confirm</span>
+            <span class="circle"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- NEW: Toast Container -->
     <div id="toast-container"></div>
 
@@ -347,6 +405,23 @@
         const allModals = document.querySelectorAll(".modal");
         const allCloseBtns = document.querySelectorAll(".close-modal");
         let _modalCloseCallback = null;
+
+        let _confirmCallback = null;
+        const confirmModalCancel = document.getElementById(
+          "confirm-modal-cancel"
+        );
+        const confirmModalConfirm = document.getElementById(
+          "confirm-modal-confirm"
+        );
+        confirmModalCancel.addEventListener("click", hideModals);
+
+        confirmModalConfirm.addEventListener("click", function () {
+          if (typeof _confirmCallback === "function") {
+            _confirmCallback();
+          }
+          hideModals();
+          _confirmCallback = null;
+        });
 
         function showModal(modalId) {
           const modal = document.getElementById(modalId);
@@ -460,18 +535,30 @@
 
         // --- 3. Creates the visual toast ---
         function createToast(notification) {
+          displayedToastIds.add(notification.id);
+          markNotificationAsRead(notification.id);
+          window.showToast(notification.text);
+        }
+
+        window.showToast = (message, type = "info") => {
           const toast = document.createElement("div");
           toast.className = "toast";
-          toast.innerHTML = notification.text;
+          if (type === "error") {
+            toast.classList.add("error");
+          } else if (type === "success") {
+            toast.classList.add("success");
+          }
+          toast.innerHTML = message;
           toastContainer.appendChild(toast);
+          const toastId = message.id ? message.id : null;
 
           setTimeout(() => {
             toast.remove();
-            displayedToastIds.delete(notification.id);
+            if (toastId) {
+              displayedToastIds.delete(toastId);
+            }
           }, 5000);
-
-          markNotificationAsRead(notification.id); // Mark as read immediately
-        }
+        };
 
         // --- 4. Marks a single notification as read ---
         function markNotificationAsRead(notifId) {
@@ -555,7 +642,11 @@
               console.error("Error responding to notification:", err);
             });
         }
-
+        window.showConfirmModal = (text, confirmCallback) => {
+          document.getElementById("confirm-modal-text").textContent = text;
+          _confirmCallback = confirmCallback;
+          showModal("confirm-modal");
+        };
         // --- Results Modal Function (Unchanged) ---
         window.showResultsModal = (metrics, onModalCloseCallback = null) => {
           _modalCloseCallback = onModalCloseCallback;

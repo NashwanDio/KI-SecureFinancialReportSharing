@@ -119,7 +119,9 @@ class SecureFile(db.Model):
     original_filename = db.Column(db.String(255), nullable=False)
     algorithm_used = db.Column(db.String(10), nullable=False)
     upload_timestamp = db.Column(db.DateTime, server_default=db.func.now())
-    encrypted_data = db.Column(db.LargeBinary, nullable=False)
+    # --- POINT 2: Replaced 'encrypted_data' with 'storage_filename' ---
+    storage_filename = db.Column(db.String(255), nullable=False, unique=True)
+    # encrypted_data = db.Column(db.LargeBinary, nullable=False) # --- REMOVED ---
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     is_public = db.Column(db.Boolean, default=True, nullable=False)
 
@@ -254,7 +256,7 @@ def encrypt():
     if not original_filename:
          return jsonify({'success': False, 'error': 'Invalid file name'}), 400
     # --- END MODIFIED ---
-        
+    _, ext = os.path.splitext(original_filename)
     file_data = file.read()
     
     start_time = time.perf_counter()
@@ -264,6 +266,9 @@ def encrypt():
     iv = None 
     CipherClass = None
     cipher_obj = None
+    
+    # --- POINT 2: Generate a unique storage name ---
+    storage_name = f"{uuid.uuid4().hex}{ext}"
     
     if algorithm in ['AES', 'DES']:
         iv = get_random_bytes(IV_SIZES[algorithm])
@@ -282,8 +287,8 @@ def encrypt():
     
     # --- NEW: Save encrypted file to 'uploads' folder ---
     try:
-        # We use original_filename here because it was already secured above
-        save_path = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
+        # --- POINT 2: Save to 'uploads/' with the unique storage_name ---
+        save_path = os.path.join(app.config['UPLOAD_FOLDER'], storage_name)
         with open(save_path, 'wb') as f:
             f.write(final_data)
     except Exception as e:
@@ -296,7 +301,9 @@ def encrypt():
         original_filename=original_filename,
         algorithm_used=algorithm,
         user_id=current_user.id,
-        encrypted_data=final_data,
+        # --- POINT 2: Save the unique name to the DB, not the data ---
+        storage_filename=storage_name,
+        # encrypted_data=final_data, # --- REMOVED ---
         is_public=is_public
     )
     db.session.add(new_file_record)
@@ -353,7 +360,21 @@ def decrypt(file_id):
     if not password:
         return jsonify({'success': False, 'error': 'Password is required'}), 400
 
-    encrypted_data_with_salt = file_record.encrypted_data
+    # --- POINT 2: Read encrypted file from disk instead of DB ---
+    storage_name = file_record.storage_filename
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], storage_name)
+    
+    if not os.path.exists(file_path):
+        return jsonify({'success': False, 'error': 'File not found on server. It may have been moved or deleted.'}), 404
+        
+    try:
+        with open(file_path, 'rb') as f:
+            encrypted_data_with_salt = f.read()
+    except Exception as e:
+        print(f"Error reading encrypted file {file_path}: {e}")
+        return jsonify({'success': False, 'error': 'Could not read file from storage.'}), 500
+    
+    # encrypted_data_with_salt = file_record.encrypted_data # --- REMOVED ---
     decrypted_data = None
     start_time = time.perf_counter()
     
@@ -420,7 +441,17 @@ def view_report(file_id):
             flash('Password is required.', 'error')
             return render_template('view_data.html', file=file_record, headers=None, data=None)
         try:
-            encrypted_data_with_salt = file_record.encrypted_data
+            storage_name = file_record.storage_filename
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], storage_name)
+    
+            if not os.path.exists(file_path):
+                return jsonify({'success': False, 'error': 'File not found on server. It may have been moved or deleted.'}), 404
+            try:
+                with open(file_path, 'rb') as f:
+                    encrypted_data_with_salt = f.read()
+            except Exception as e:
+                print(f"Error reading encrypted file {file_path}: {e}")
+                return jsonify({'success': False, 'error': 'Could not read file from storage.'}), 500
             salt = encrypted_data_with_salt[:SALT_SIZE]
             key = get_key_from_password(password, salt, algorithm)
             decrypted_json_data = None
@@ -607,7 +638,9 @@ def api_respond_friend(request_id):
         notif_text = f"<strong>{current_user.username}</strong> denied your friend request."
         new_notif = Notification(user_id=friend_request.requester_id, text=notif_text, is_read=False)
         db.session.add(new_notif)
-        db.session.delete(friend_request)
+        # --- POINT 3: Standardize deny logic ---
+        friend_request.status = 'denied'
+        # db.session.delete(friend_request) # --- REMOVED ---
         
     db.session.commit()
     return jsonify({'success': True})
@@ -690,6 +723,17 @@ def delete_file(file_id):
     if file_record.user_id != current_user.id:
         return jsonify({'success': False, 'error': 'Not authorized'}), 403
 
+    # --- POINT 2: Also delete the file from the 'uploads' folder ---
+    try:
+        storage_name = file_record.storage_filename
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], storage_name)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        # Log the error but don't stop the DB deletion
+        print(f"Error deleting file {file_path} from disk: {e}")
+    # --- End of new block ---
+
     # Delete associated parsed report data if exists
     if file_record.parsed_data:
         db.session.delete(file_record.parsed_data)
@@ -704,6 +748,28 @@ def delete_file(file_id):
     db.session.delete(file_record)
     db.session.commit()
     return jsonify({'success': True})
+
+@app.route('/download_encrypted/<int:file_id>')
+@login_required
+def download_encrypted(file_id):
+    file_record = SecureFile.query.get_or_404(file_id)
+    
+    storage_name = file_record.storage_filename
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], storage_name)
+    
+    if not os.path.exists(file_path):
+        flash('File not found on server storage.', 'error')
+        return redirect(request.referrer or url_for('dashboard'))
+
+    # --- MODIFIED LINE ---
+    # Send the file with its *original* name, not with .enc
+    download_name = file_record.original_filename
+    
+    return send_file(
+        file_path,
+        download_name=download_name,
+        as_attachment=True
+    )
 
 # --- Main ---
 if __name__ == '__main__':

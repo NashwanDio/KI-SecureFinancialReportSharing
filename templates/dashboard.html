@@ -411,7 +411,12 @@ message in messages %}
         {% for file in owned_files %}
         <li class="file-item">
           <div class="file-info">
-            <span class="filename">{{ file.original_filename }}</span>
+            <a
+              href="{{ url_for('download_encrypted', file_id=file.id) }}"
+              class="filename"
+              title="Download encrypted file"
+              >{{ file.original_filename }}</a
+            >
             <span class="meta">
               Method: {{ file.algorithm_used }} | Visibility: {% if
               file.is_public %}Public{% else %}Private{% endif %}
@@ -468,7 +473,12 @@ message in messages %}
         {% for file in shared_files %}
         <li class="file-item">
           <div class="file-info">
-            <span class="filename">{{ file.original_filename }}</span>
+            <a
+              href="{{ url_for('download_encrypted', file_id=file.id) }}"
+              class="filename"
+              title="Download encrypted file"
+              >{{ file.original_filename }}</a
+            >
             <span class="meta">
               Method: {{ file.algorithm_used }} | Owner:
               <strong>{{ file.owner.username }}</strong>
@@ -517,8 +527,11 @@ message in messages %}
         {% for file in public_files %}
         <li class="file-item file-item-request" data-file-id="{{ file.id }}">
           <div class="file-info">
-            <span class="filename filename-long"
-              >{{ file.original_filename }}</span
+            <a
+              href="{{ url_for('download_encrypted', file_id=file.id) }}"
+              class="filename filename-long"
+              title="Download encrypted file"
+              >{{ file.original_filename }}</a
             >
             <span class="meta">
               Method: {{ file.algorithm_used }} | Owner:
@@ -552,8 +565,11 @@ message in messages %}
         {% for file in friends_files %}
         <li class="file-item file-item-request" data-file-id="{{ file.id }}">
           <div class="file-info">
-            <span class="filename filename-long"
-              >{{ file.original_filename }}</span
+            <a
+              href="{{ url_for('download_encrypted', file_id=file.id) }}"
+              class="filename filename-long"
+              title="Download encrypted file"
+              >{{ file.original_filename }}</a
             >
             <span class="meta">
               Method: {{ file.algorithm_used }} | Owner:
@@ -593,12 +609,12 @@ message in messages %}
       const fileInput = document.getElementById("file");
       const passwordInput = document.getElementById("password_encrypt");
       if (!fileInput.files || fileInput.files.length === 0) {
-        alert("Please select a file to encrypt.");
+        window.showToast("Please select a file to encrypt.", "error");
         fileInput.focus();
         return;
       }
       if (!passwordInput.value) {
-        alert("Password is required.");
+        window.showToast("Password is required.", "error");
         passwordInput.focus();
         return;
       }
@@ -632,14 +648,14 @@ message in messages %}
               window.location.reload();
             });
           } else {
-            alert("Error: " + data.error);
+            window.showToast("<strong>Error:</strong> " + data.error, "error");
           }
         })
         .catch((err) => {
           this.disabled = false;
           textEl.textContent = originalText;
           console.error("Fetch error:", err);
-          alert("An error occurred. Please try again.");
+          window.showToast("An error occurred. Please try again.", "error");
         });
     });
 
@@ -672,7 +688,10 @@ message in messages %}
               } else {
                 button.disabled = false;
                 button.textContent = "Request Access";
-                alert("Error: " + data.error);
+                window.showToast(
+                  "<strong>Error:</strong> " + data.error,
+                  "error"
+                );
               }
             }
           })
@@ -680,7 +699,7 @@ message in messages %}
             console.error("Fetch error:", err);
             button.disabled = false;
             button.textContent = "Request Access";
-            alert("An error occurred. Please try again.");
+            window.showToast("An error occurred. Please try again.", "error");
           });
       });
     });
@@ -693,7 +712,7 @@ message in messages %}
         const passwordInput = item.querySelector(".decrypt-password");
         const password = passwordInput.value;
         if (!password) {
-          alert("Password is required.");
+          window.showToast("Password is required.", "error");
           passwordInput.focus();
           return;
         }
@@ -725,14 +744,17 @@ message in messages %}
               a.click();
               document.body.removeChild(a);
             } else {
-              alert("Error: " + data.error);
+              window.showToast(
+                "<strong>Error:</strong> " + data.error,
+                "error"
+              );
             }
           })
           .catch((err) => {
             this.disabled = false;
             textEl.textContent = originalText;
             console.error("Fetch error:", err);
-            alert("An error occurred. Please try again.");
+            window.showToast("An error occurred. Please try again.", "error");
           });
       });
     });
@@ -741,37 +763,51 @@ message in messages %}
     document.querySelectorAll(".delete-file-btn").forEach((button) => {
       button.addEventListener("click", function () {
         const fileId = this.dataset.fileId;
-        if (
-          !confirm(
-            "Are you sure you want to delete this file? This action cannot be undone."
-          )
-        ) {
-          return;
-        }
-        const textEl = this.querySelector(".text");
-        const originalText = textEl.textContent;
-        this.disabled = true;
-        textEl.textContent = "Deleting...";
-        fetch(`/delete_file/${fileId}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            this.disabled = false;
-            textEl.textContent = originalText;
-            if (data.success) {
-              window.location.reload();
-            } else {
-              alert("Error: " + data.error);
-            }
-          })
-          .catch((err) => {
-            this.disabled = false;
-            textEl.textContent = originalText;
-            console.error("Fetch error:", err);
-            alert("An error occurred. Please try again.");
-          });
+        const fileItemElement = this.closest(".file-item");
+        window.showConfirmModal(
+          "Are you sure you want to delete this file? This action cannot be undone.",
+          () => {
+            // This code runs only if the user clicks "Confirm"
+            const textEl = button.querySelector(".text");
+            const originalText = textEl.textContent;
+            button.disabled = true;
+            textEl.textContent = "Deleting...";
+
+            fetch(`/delete_file/${fileId}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            })
+              .then((res) => res.json())
+              .then((data) => {
+                button.disabled = false;
+                textEl.textContent = originalText;
+                if (data.success) {
+                  // --- POINT 4 (Partial): Fade out and remove instead of reload ---
+                  fileItemElement.style.transition = "opacity 0.5s";
+                  fileItemElement.style.opacity = "0";
+                  setTimeout(() => fileItemElement.remove(), 500);
+                  window.showToast("File deleted successfully.", "success");
+                  // window.location.reload(); // --- Replaced with dynamic removal ---
+                } else {
+                  // --- POINT 3: Replaced alert() ---
+                  window.showToast(
+                    "<strong>Error:</strong> " + data.error,
+                    "error"
+                  );
+                }
+              })
+              .catch((err) => {
+                button.disabled = false;
+                textEl.textContent = originalText;
+                console.error("Fetch error:", err);
+                // --- POINT 3: Replaced alert() ---
+                window.showToast(
+                  "An error occurred. Please try again.",
+                  "error"
+                );
+              });
+          }
+        );
       });
     });
   });
