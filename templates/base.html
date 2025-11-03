@@ -1,344 +1,587 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>{% block title %}Golshi's Encryptor{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
     <style>
-        /* Base styles for all logged-in pages */
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            font-family: Muller, sans-serif;
-            background: #DBDAE7;
-            overflow-x: hidden;
-        }
+      /* Base styles */
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        font-family: Muller, sans-serif;
+        background: #dbdae7;
+        overflow-x: hidden;
+      }
 
-        /* --- Header / Nav --- */
-        .app-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 40px;
-            background: #E72E40;
-            color: white;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        .app-header .logo {
-            font-family: 'LEMON MILK', sans-serif;
-            font-size: 24px;
-            font-weight: 700;
-        }
-        .app-header nav {
-            display: flex;
-            align-items: center;
-            gap: 25px;
-        }
-        .app-header nav a {
-            color: white;
-            text-decoration: none;
-            font-family: 'LEMON MILK', sans-serif;
-            font-weight: 700;
-            font-size: 16px;
-            transition: opacity 0.2s;
-        }
-        .app-header nav a:hover {
-            opacity: 0.8;
-        }
-        
-        /* --- Notification Bell --- */
-        .notification-bell {
-            position: relative;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        .notification-count {
-            position: absolute;
-            top: -5px;
-            right: -10px;
-            background: #DBDAE7;
-            color: #E72E40;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            display: none; /* Hidden by default */
-            justify-content: center;
-            align-items: center;
-            font-family: Muller, sans-serif;
-        }
-        .notification-count.visible {
-            display: flex;
-        }
+      /* --- Header / Nav --- */
+      .app-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 40px;
+        background: #e72e40;
+        color: white;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+      }
+      .app-header .logo {
+        font-family: "LEMON MILK", sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .app-header nav {
+        display: flex;
+        align-items: center;
+        gap: 25px;
+      }
+      .app-header nav a {
+        color: white;
+        text-decoration: none;
+        font-family: "LEMON MILK", sans-serif;
+        font-weight: 700;
+        font-size: 16px;
+        transition: opacity 0.2s;
+      }
+      .app-header nav a:hover {
+        opacity: 0.8;
+      }
 
-        /* --- Notification Modal --- */
-        .notification-modal {
-            display: none; /* Hidden by default */
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 350px;
-            max-height: 400px;
-            background: white;
-            border: 1px solid #E72E40;
-            border-radius: 18px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            z-index: 2000;
-            overflow: hidden;
-            flex-direction: column;
-        }
-        .notification-modal.visible {
-            display: flex;
-        }
-        .notification-header {
-            padding: 15px;
-            background: #E72E40;
-            color: white;
-            font-family: 'LEMON MILK', sans-serif;
-            font-size: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .notification-header .close-modal {
-            font-size: 24px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .notification-list {
-            padding: 10px;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-        .notification-item {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            font-size: 14px;
-        }
-        .notification-item:last-child {
-            border-bottom: none;
-        }
-        .notification-item-text {
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-        .notification-actions {
-            display: flex;
-            gap: 10px;
-        }
-        .notification-actions button {
-             font-family: 'LEMON MILK', sans-serif;
-             border: none;
-             border-radius: 5px;
-             padding: 5px 10px;
-             cursor: pointer;
-             font-size: 12px;
-        }
-        .notif-btn-approve { background: #28a745; color: white; }
-        .notif-btn-deny { background: #dc3545; color: white; }
+      /* --- Notification Bell --- */
+      .notification-bell {
+        position: relative;
+        font-size: 20px;
+        cursor: pointer; /* FIX: Bell is clickable again */
+      }
+      .notification-count {
+        position: absolute;
+        top: -5px;
+        right: -10px;
+        background: #dbdae7;
+        color: #e72e40;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        font-family: Muller, sans-serif;
+      }
+      .notification-count.visible {
+        display: flex;
+      }
 
-        /* --- Main Content Block --- */
-        .content-wrapper {
-            padding: 30px 40px;
+      /* --- Base Modal Styles --- */
+      .modal-backdrop {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1999;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      .modal-backdrop.visible {
+        display: block;
+        opacity: 1;
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        background: white;
+        border: 1px solid #e72e40;
+        border-radius: 18px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        z-index: 2000;
+        overflow: hidden;
+        flex-direction: column;
+        opacity: 0;
+        transform: scale(0.95);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+      }
+      .modal.visible {
+        display: flex;
+        opacity: 1;
+        transform: scale(1);
+      }
+      .modal-header {
+        padding: 15px;
+        background: #e72e40;
+        color: white;
+        font-family: "LEMON MILK", sans-serif;
+        font-size: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .modal-header .close-modal {
+        font-size: 24px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex-grow: 1;
+      }
+
+      /* --- FIX: Notification Modal (Back from the dead) --- */
+      .notification-modal {
+        top: 70px; /* Position from top */
+        right: 20px;
+        width: 380px;
+        max-height: 450px;
+        transform: translateX(100%) scale(0.95);
+      }
+      .notification-modal.visible {
+        transform: translateX(0) scale(1);
+      }
+      .notification-list {
+        padding: 0; /* Remove padding from modal-body */
+      }
+      .notification-item {
+        padding: 12px 20px;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+      }
+      .notification-item:last-child {
+        border-bottom: none;
+      }
+      .notification-item-text {
+        margin-bottom: 10px;
+        line-height: 1.4;
+      }
+      /* Style for read notifications */
+      .notification-item.is-read .notification-item-text {
+        color: #888;
+      }
+      .notification-actions {
+        display: flex;
+        gap: 10px;
+      }
+      .notification-actions button {
+        font-family: "LEMON MILK", sans-serif;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .notif-btn-approve {
+        background: #28a745;
+        color: white;
+      }
+      .notif-btn-deny {
+        background: #dc3545;
+        color: white;
+      }
+
+      /* --- Results Modal (Unchanged) --- */
+      .results-modal {
+        top: 50%;
+        left: 50%;
+        width: 500px;
+        transform: translate(-50%, -50%) scale(0.95);
+      }
+      .results-modal.visible {
+        transform: translate(-50%, -50%) scale(1);
+      }
+      .metric {
+        font-size: 20px;
+        margin: 15px 0;
+        color: #e72e40;
+        font-family: "LEMON MILK", sans-serif;
+        font-weight: 700;
+        text-align: center;
+      }
+      .metric span {
+        font-weight: 700;
+        color: #e72e40b0;
+      }
+
+      /* --- NEW: Toast Container --- */
+      #toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .toast {
+        width: 350px;
+        background: #ffffff;
+        border: 1px solid #e72e40;
+        border-left: 5px solid #e72e40;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 16px;
+        font-family: Muller, sans-serif;
+        font-size: 15px;
+        line-height: 1.4;
+        color: #333;
+        /* Animation */
+        opacity: 0;
+        transform: translateX(100%);
+        animation: slideIn 0.5s forwards, fadeOut 0.5s 4.5s forwards;
+      }
+      @keyframes slideIn {
+        to {
+          opacity: 1;
+          transform: translateX(0);
         }
+      }
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+      }
+      .toast strong {
+        color: #e72e40;
+      }
+
+      /* --- Main Content Block --- */
+      .content-wrapper {
+        padding: 30px 40px;
+      }
     </style>
-    
-    {% block head %}{% endblock %}
-</head>
-<body>
 
+    {% block head %}{% endblock %}
+  </head>
+  <body>
     <header class="app-header">
-        <div class="logo">Golshi's Encryptor</div>
-        <nav>
-            <a href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('find_users') }}">Find Users</a>
-            <a href="#" class="notification-bell" id="notification-bell">
-                <i class="fas fa-bell"></i>
-                <span class="notification-count" id="notification-count">0</span>
-            </a>
-            <a href="{{ url_for('logout') }}">Logout</a>
-        </nav>
+      <div class="logo">Golshi's Encryptor</div>
+      <nav>
+        <a href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('find_users') }}">Find Users</a>
+        <!-- FIX: Bell is clickable again -->
+        <a href="#" class="notification-bell" id="notification-bell">
+          <i class="fas fa-bell"></i>
+          <span class="notification-count" id="notification-count">0</span>
+        </a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+      </nav>
     </header>
 
-    <main class="content-wrapper">
-        {% block content %}{% endblock %}
-    </main>
-    
-    <div class="notification-modal" id="notification-modal">
-        <div class="notification-header">
-            <span>Notifications</span>
-            <span class="close-modal" id="close-modal">&times;</span>
-        </div>
-        <div class="notification-list" id="notification-list">
-            <!-- JavaScript builds this -->
-        </div>
+    <main class="content-wrapper">{% block content %}{% endblock %}</main>
+
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+
+    <!-- FIX: Notification Modal is BACK -->
+    <div class="modal notification-modal" id="notification-modal">
+      <div class="modal-header">
+        <span>Notifications</span>
+        <span class="close-modal" data-modal="notification-modal">&times;</span>
+      </div>
+      <div class="notification-list modal-body" id="notification-list">
+        <!-- JavaScript builds this -->
+      </div>
     </div>
 
-    <!-- Your centralized random sound script (unchanged) -->
+    <!-- Results Modal (Unchanged) -->
+    <div class="modal results-modal" id="results-modal">
+      <div class="modal-header">
+        <span>Performance Results</span>
+        <span class="close-modal" data-modal="results-modal">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="metric" id="res-operation">Operation: <span>...</span></div>
+        <div class="metric" id="res-algorithm">Method: <span>...</span></div>
+        <div class="metric" id="res-time">
+          Time Executed: <span>...</span> s
+        </div>
+        <div class="metric" id="res-size">
+          Output Size: <span>...</span> bytes
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW: Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Centralized sound script (unchanged) -->
     <script>
+      (function () {
         const soundList = [
-            "{{ url_for('static', filename='sound1.mp3') }}",
-            "{{ url_for('static', filename='sound2.mp3') }}",
-            "{{ url_for('static', filename='sound4.mp3') }}"
+          "{{ url_for('static', filename='sound1.mp3') }}",
+          "{{ url_for('static', filename='sound2.mp3') }}",
         ];
-        const minTime = 20000;
-        const maxTime = 60000;
+        const minTime = 5000;
+        const maxTime = 30000;
 
         function playRandomSound() {
-            const randomIndex = Math.floor(Math.random() * soundList.length);
-            const soundToPlay = soundList[randomIndex];
-            const annoyingAudio = new Audio(soundToPlay);
-            annoyingAudio.volume = 0.2;
-            annoyingAudio.play().catch(e => {});
-            const randomTime = Math.random() * (maxTime - minTime) + minTime;
-            setTimeout(playRandomSound, randomTime);
+          const randomIndex = Math.floor(Math.random() * soundList.length);
+          const soundToPlay = soundList[randomIndex];
+          const annoyingAudio = new Audio(soundToPlay);
+          annoyingAudio.volume = 0.2;
+          annoyingAudio.play().catch((e) => {});
+          const randomTime = Math.random() * (maxTime - minTime) + minTime;
+          setTimeout(playRandomSound, randomTime);
         }
-        setTimeout(playRandomSound, 30000);
+        setTimeout(playRandomSound, 2000);
+      })();
     </script>
-    
-    <!-- === UPDATED JAVASCRIPT FOR NOTIFICATION MODAL === -->
+
+    <!-- === REWRITTEN JAVASCRIPT FOR TOASTS & MODALS === -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const bell = document.getElementById('notification-bell');
-            const modal = document.getElementById('notification-modal');
-            const closeBtn = document.getElementById('close-modal');
-            const notifList = document.getElementById('notification-list');
-            const notifCount = document.getElementById('notification-count');
+      document.addEventListener("DOMContentLoaded", function () {
+        // --- Modal Globals ---
+        const backdrop = document.getElementById("modal-backdrop");
+        const allModals = document.querySelectorAll(".modal");
+        const allCloseBtns = document.querySelectorAll(".close-modal");
+        let _modalCloseCallback = null;
 
-            // --- Toggle Modal ---
-            bell.addEventListener('click', (e) => {
-                e.preventDefault();
-                modal.classList.toggle('visible');
-                if (modal.classList.contains('visible')) {
-                    fetchAndRenderAllNotifications(); 
-                }
-            });
-            closeBtn.addEventListener('click', () => modal.classList.remove('visible'));
+        function showModal(modalId) {
+          const modal = document.getElementById(modalId);
+          if (!modal) return;
+          backdrop.classList.add("visible");
+          modal.classList.add("visible");
+        }
 
-            // --- 1. Fetch Summary Count (for the bell icon) ---
-            function fetchNotificationSummary() {
-                fetch("{{ url_for('api_get_notifications') }}")
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.total_pending_count > 0) {
-                            notifCount.textContent = data.total_pending_count;
-                            notifCount.classList.add('visible');
-                        } else {
-                            notifCount.classList.remove('visible');
-                            notifCount.textContent = '0';
-                        }
-                    })
-                    .catch(err => console.error("Error fetching notification summary:", err));
-            }
-            
-            // --- 2. Fetch & Render All Notifications (for the modal) ---
-            function fetchAndRenderAllNotifications() {
-                notifList.innerHTML = `<div style="text-align: center; padding: 20px;">Loading...</div>`;
-                
-                fetch("{{ url_for('api_get_notifications') }}")
-                    .then(res => res.json())
-                    .then(data => {
-                        notifList.innerHTML = ''; // Clear spinner
-                        if (data.notifications.length === 0) {
-                            notifList.innerHTML = `<div style="text-align: center; padding: 20px; color: #666;">No new notifications.</div>`;
-                            return;
-                        }
-                        
-                        data.notifications.forEach(notif => {
-                            const item = document.createElement('div');
-                            item.className = 'notification-item';
-                            item.dataset.id = notif.id; // Store ID on the item
-                            item.dataset.type = notif.type; // Store type
-                            
-                            item.innerHTML = `
-                                <div class="notification-item-text">${notif.text}</div>
-                                <div class="notification-actions">
-                                    <button class="notif-btn-approve" data-action="approve">Approve</button>
-                                    <button class="notif-btn-deny" data-action="deny">Deny</button>
-                                </div>
-                            `;
-                            notifList.appendChild(item);
-                        });
-                    })
-                    .catch(err => {
-                        console.error("Error fetching all notifications:", err);
-                        notifList.innerHTML = `<div style="text-align: center; padding: 20px; color: red;">Error loading notifications.</div>`;
-                    });
-            }
+        function hideModals() {
+          backdrop.classList.remove("visible");
+          allModals.forEach((m) => m.classList.remove("visible"));
+          if (typeof _modalCloseCallback === "function") {
+            _modalCloseCallback();
+            _modalCloseCallback = null;
+          }
+        }
 
-            // --- 3. Handle Clicks INSIDE the modal (Approve/Deny) ---
-            notifList.addEventListener('click', function(e) {
-                const button = e.target;
-                if (!button.matches('.notif-btn-approve') && !button.matches('.notif-btn-deny')) {
-                    return; // Click wasn't on a button
-                }
-                
-                const item = button.closest('.notification-item');
-                const id = item.dataset.id;
-                const type = item.dataset.type;
-                const action = button.dataset.action;
-                
-                respondToNotification(item, id, type, action);
-            });
-            
-            // --- 4. Send the API request for the action ---
-            function respondToNotification(itemElement, id, type, action) {
-                let url = '';
-                if (type === 'friend') {
-                    url = `{{ url_for('api_respond_friend', request_id=0) }}`.replace('0', id);
-                } else if (type === 'file') {
-                    url = `{{ url_for('api_respond_file', request_id=0) }}`.replace('0', id);
-                } else {
-                    return;
-                }
-                
-                // Disable buttons
-                itemElement.querySelectorAll('button').forEach(b => b.disabled = true);
-                
-                fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: action })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        // Success! Remove from modal and update count
-                        itemElement.style.opacity = '0.5';
-                        itemElement.innerHTML = `<div style="padding: 10px; color: #666;">Handled.</div>`;
-                        fetchNotificationSummary(); // Re-fetch the count for the bell
-                        // Remove it after a small delay
-                        setTimeout(() => {
-                           itemElement.remove();
-                           // Check if list is now empty
-                           if (notifList.children.length === 0) {
-                               notifList.innerHTML = `<div style="text-align: center; padding: 20px; color: #666;">No new notifications.</div>`;
-                           }
-                        }, 1000);
-                    } else {
-                        // Re-enable buttons on error
-                        itemElement.querySelectorAll('button').forEach(b => b.disabled = false);
-                        alert('An error occurred: ' + data.error);
-                    }
-                })
-                .catch(err => {
-                    itemElement.querySelectorAll('button').forEach(b => b.disabled = false);
-                    console.error("Error responding to notification:", err);
-                });
-            }
+        allCloseBtns.forEach((btn) =>
+          btn.addEventListener("click", hideModals)
+        );
+        backdrop.addEventListener("click", hideModals);
 
-            // --- Initial Load & Refresh ---
-            fetchNotificationSummary();
-            setInterval(fetchNotificationSummary, 30000); // Poll every 30 seconds
+        // --- Notification System ---
+        const bell = document.getElementById("notification-bell");
+        const notifModal = document.getElementById("notification-modal");
+        const notifList = document.getElementById("notification-list");
+        const notifCount = document.getElementById("notification-count");
+        const toastContainer = document.getElementById("toast-container");
+        let displayedToastIds = new Set();
+        let hasFetchedOnce = false; // Flag to prevent initial toast storm
+
+        // --- FIX: Bell is clickable again ---
+        bell.addEventListener("click", (e) => {
+          e.preventDefault();
+          showModal("notification-modal");
+          fetchAndRenderModalNotifications();
         });
-    </script>
-    
-    {% block scripts %}{% endblock %}
 
-</body>
+        // --- 1. Fetches notifications for TOASTS ---
+        function fetchNotificationsForToast() {
+          fetch("{{ url_for('api_get_new_notifications') }}")
+            .then((res) => res.json())
+            .then((data) => {
+              updateBellCount(data.new_notification_count);
+
+              if (!hasFetchedOnce) {
+                hasFetchedOnce = true;
+                data.notifications.forEach((notif) =>
+                  displayedToastIds.add(notif.id)
+                );
+                return;
+              }
+
+              data.notifications.forEach((notif) => {
+                if (!displayedToastIds.has(notif.id)) {
+                  createToast(notif);
+                  displayedToastIds.add(notif.id);
+                }
+              });
+            })
+            .catch((err) =>
+              console.error("Error fetching notifications:", err)
+            );
+        }
+
+        // --- 2. Fetches notifications for the MODAL ---
+        function fetchAndRenderModalNotifications() {
+          notifList.innerHTML = `<div style="text-align: center; padding: 20px;">Loading...</div>`;
+          // FIX: Call the new history route
+          fetch("{{ url_for('api_get_notification_history') }}")
+            .then((res) => res.json())
+            .then((data) => {
+              notifList.innerHTML = "";
+              if (data.notifications.length === 0) {
+                notifList.innerHTML = `<div style="text-align: center; padding: 20px; color: #666;">No notifications.</div>`;
+                return;
+              }
+              data.notifications.forEach((notif) => {
+                const item = document.createElement("div");
+                item.className = "notification-item";
+                if (notif.is_read) {
+                  item.classList.add("is-read");
+                }
+                item.dataset.id = notif.id;
+                item.dataset.type = notif.type;
+                item.dataset.requestId = notif.request_id; // Store the *actual* request ID
+
+                let actions = "";
+                if (
+                  notif.type === "friend_request" ||
+                  notif.type === "file_request"
+                ) {
+                  actions = `
+                                    <div class="notification-actions">
+                                        <button class="notif-btn-approve" data-action="approve">Approve</button>
+                                        <button class="notif-btn-deny" data-action="deny">Deny</button>
+                                    </div>`;
+                }
+
+                item.innerHTML = `<div class="notification-item-text">${notif.text}</div>${actions}`;
+                notifList.appendChild(item);
+              });
+
+              // After opening, the bell count should be 0
+              updateBellCount(0);
+            })
+            .catch((err) => {
+              notifList.innerHTML = `<div style="text-align: center; padding: 20px; color: red;">Error loading notifications.</div>`;
+            });
+        }
+
+        // --- 3. Creates the visual toast ---
+        function createToast(notification) {
+          const toast = document.createElement("div");
+          toast.className = "toast";
+          toast.innerHTML = notification.text;
+          toastContainer.appendChild(toast);
+
+          setTimeout(() => {
+            toast.remove();
+            displayedToastIds.delete(notification.id);
+          }, 5000);
+
+          markNotificationAsRead(notification.id); // Mark as read immediately
+        }
+
+        // --- 4. Marks a single notification as read ---
+        function markNotificationAsRead(notifId) {
+          fetch("{{ url_for('mark_read') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: notifId }),
+          }).then(() => fetchNotificationSummary()); // Update bell count
+        }
+
+        // --- 5. Updates just the bell count (no toasts) ---
+        function fetchNotificationSummary() {
+          fetch("{{ url_for('api_get_new_notifications') }}")
+            .then((res) => res.json())
+            .then((data) => updateBellCount(data.new_notification_count));
+        }
+
+        function updateBellCount(count) {
+          if (count > 0) {
+            notifCount.textContent = count;
+            notifCount.classList.add("visible");
+          } else {
+            notifCount.classList.remove("visible");
+            notifCount.textContent = "0";
+          }
+        }
+
+        // --- 6. Handle clicks *inside* the modal ---
+        notifList.addEventListener("click", function (e) {
+          const button = e.target.closest(
+            ".notif-btn-approve, .notif-btn-deny"
+          );
+          if (!button) return;
+
+          const item = button.closest(".notification-item");
+          const requestId = item.dataset.requestId; // Use the *real* request ID
+          const type = item.dataset.type;
+          const action = button.dataset.action;
+
+          respondToNotification(item, requestId, type, action);
+        });
+
+        function respondToNotification(itemElement, requestId, type, action) {
+          let url =
+            type === "friend_request"
+              ? `{{ url_for('api_respond_friend', request_id=0) }}`.replace(
+                  "0",
+                  requestId
+                )
+              : `{{ url_for('api_respond_file', request_id=0) }}`.replace(
+                  "0",
+                  requestId
+                );
+
+          itemElement
+            .querySelectorAll("button")
+            .forEach((b) => (b.disabled = true));
+
+          fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: action }),
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success) {
+                itemElement.style.opacity = "0.5";
+                itemElement.innerHTML = `<div class="notification-item-text" style="color: #666;">Handled.</div>`;
+                fetchNotificationSummary();
+              } else {
+                itemElement
+                  .querySelectorAll("button")
+                  .forEach((b) => (b.disabled = false));
+                alert("An error occurred: " + data.error);
+              }
+            })
+            .catch((err) => {
+              itemElement
+                .querySelectorAll("button")
+                .forEach((b) => (b.disabled = false));
+              console.error("Error responding to notification:", err);
+            });
+        }
+
+        // --- Results Modal Function (Unchanged) ---
+        window.showResultsModal = (metrics, onModalCloseCallback = null) => {
+          _modalCloseCallback = onModalCloseCallback;
+          document.getElementById(
+            "res-operation"
+          ).innerHTML = `Operation: <span>${metrics.operation}</span>`;
+          document.getElementById(
+            "res-algorithm"
+          ).innerHTML = `Method: <span>${metrics.algorithm}</span>`;
+          document.getElementById(
+            "res-time"
+          ).innerHTML = `Time Executed: <span>${metrics.time.toFixed(
+            6
+          )} s</span>`;
+          document.getElementById(
+            "res-size"
+          ).innerHTML = `Output Size: <span>${metrics.size} bytes</span>`;
+          showModal("results-modal");
+        };
+
+        // --- Initial Load & Polling ---
+        fetchNotificationsForToast(); // This will show toasts for new notifs
+        setInterval(fetchNotificationsForToast, 5000); // Poll every 5 seconds
+      });
+    </script>
+
+    {% block scripts %}{% endblock %}
+  </body>
 </html>

@@ -11,6 +11,7 @@
         position: relative;
         display: flex;
         align-items: center;
+        justify-content: center; /* FIX: Center text */
         gap: 4px;
         padding: 16px 36px;
         border: 4px solid;
@@ -58,13 +59,13 @@
       .animated-button .text {
         position: relative;
         z-index: 1;
-        transform: translateX(-12px);
-        transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        /* FIX: Removed transform */
+        transition: color 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        color: #ffffff; /* Text B (white) */
       }
 
       .animated-button:hover {
         box-shadow: 0 0 0 12px transparent;
-        color: #e72e40;
         border-radius: 12px;
       }
 
@@ -77,7 +78,8 @@
       }
 
       .animated-button:hover .text {
-        transform: translateX(12px);
+        /* FIX: Removed transform */
+        color: #e72e40; /* Text A (red) */
       }
 
       .animated-button:hover svg {
@@ -92,8 +94,10 @@
       .animated-button:hover .circle {
         width: 220px;
         height: 220px;
-        opacity: 1;
+        opacity: 1; /* BG B (white) */
       }
+
+      /* ... (rest of your login.html styles are unchanged) ... */
 
       body,
       html {
@@ -142,12 +146,10 @@
         height: 100%;
         background: #dbdae7;
         position: relative;
-
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;
-
         padding: 20px;
         box-sizing: border-box;
         overflow-y: auto;

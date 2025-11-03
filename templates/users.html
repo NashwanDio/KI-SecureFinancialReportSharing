@@ -1,151 +1,155 @@
-{% extends "base.html" %}
-
-{% block title %}Find Users{% endblock %}
-
-{% block head %}
+{% extends "base.html" %} {% block title %}Find Users{% endblock %} {% block
+head %}
 <style>
-    /* Styles specific to the users page */
-    .user-list-container {
-        max-width: 900px;
-        margin: 0 auto;
-        background: white;
-        border: 1px solid #E72E40;
-        padding: 25px;
-        border-radius: 18px;
-        box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
-    }
-    h1 {
-        color: #E72E40;
-        font-family: 'LEMON MILK', sans-serif;
-    }
-    .user-list {
-        list-style: none;
-        padding: 0;
-    }
-    .user-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 15px;
-        border-bottom: 1px solid #eee;
-    }
-    .user-item:last-child {
-        border-bottom: none;
-    }
-    .user-name {
-        font-size: 1.2em;
-        font-weight: bold;
-        color: #333;
-    }
-    
-    /* Button styles */
-    .btn {
-        font-family: 'LEMON MILK', sans-serif;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 15px;
-        cursor: pointer;
-        font-weight: 700;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 14px;
-    }
-    .btn-primary { background-color: #E72E40; color: white; }
-    .btn-secondary { background-color: #6c757d; color: white; }
-    .btn-danger { background-color: #dc3545; color: white; }
-    .btn-pending { background-color: #ffc107; color: #333; cursor: default; }
-    
+  /* Styles specific to the users page */
+  .user-list-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border: 1px solid #e72e40;
+    padding: 25px;
+    border-radius: 18px;
+    box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  h1 {
+    color: #e72e40;
+    font-family: "LEMON MILK", sans-serif;
+  }
+  .user-list {
+    list-style: none;
+    padding: 0;
+  }
+  .user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+  }
+  .user-item:last-child {
+    border-bottom: none;
+  }
+  .user-name {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #333;
+  }
+
+  /* Button styles */
+  .btn {
+    font-family: "LEMON MILK", sans-serif;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+  }
+  .btn-primary {
+    background-color: #e72e40;
+    color: white;
+  }
+  .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+  }
+  .btn-danger {
+    background-color: #dc3545;
+    color: white;
+  }
+  .btn-pending {
+    background-color: #ffc107;
+    color: #333;
+    cursor: default;
+  }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="user-list-container">
-    <h1>Find Users</h1>
-    
-    <!-- Flash messages for friend actions -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  <h1>Find Users</h1>
 
-    <ul class="user-list">
-        {% for user in all_users %}
-            <li class="user-item" data-user-id="{{ user.id }}">
-                <span class="user-name">{{ user.username }}</span>
-                
-                {% set status = current_user.get_friend_status(user) %}
-                
-                <div class="user-actions">
-                    {% if status == 'none' %}
-                        <!-- No relationship, show 'Add Friend' -->
-                        <button class="btn btn-primary friend-action-btn" data-action="request">
-                            Send Friend Request
-                        </button>
-                    {% elif status == 'pending' %}
-                        {% set req = user.sent_friend_requests.filter_by(receiver_id=current_user.id).first() %}
-                        {% if req %}
-                            <!-- They sent US a request, show 'Pending' -->
-                            <span class="btn btn-pending">Request Received</span>
-                        {% else %}
-                            <!-- We sent THEM a request, show 'Cancel' -->
-                            <button class="btn btn-secondary friend-action-btn" data-action="cancel">
-                                Cancel Request
-                            </button>
-                        {% endif %}
-                    {% elif status == 'approved' %}
-                        <!-- We are friends, show 'Remove' -->
-                        <button class="btn btn-danger friend-action-btn" data-action="remove">
-                            Remove Friend
-                        </button>
-                    {% elif status == 'blocked' %}
-                        <span class="btn btn-pending">Blocked</span>
-                    {% endif %}
-                </div>
-            </li>
+  <!-- Flash messages for friend actions -->
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %} {% for category, message in messages %}
+  <div class="flash {{ category }}">{{ message }}</div>
+  {% endfor %} {% endif %} {% endwith %}
+
+  <ul class="user-list">
+    {% for user in all_users %}
+    <li class="user-item" data-user-id="{{ user.id }}">
+      <span class="user-name">{{ user.username }}</span>
+
+      {% set status = current_user.get_friend_status(user) %}
+
+      <div class="user-actions">
+        {% if status == 'none' %}
+        <!-- No relationship, show 'Add Friend' -->
+        <button class="btn btn-primary friend-action-btn" data-action="request">
+          Send Friend Request
+        </button>
+        {% elif status == 'pending' %} {% set req =
+        user.sent_friend_requests.filter_by(receiver_id=current_user.id).first()
+        %} {% if req %}
+        <!-- They sent US a request, show 'Pending' -->
+        <span class="btn btn-pending">Request Received</span>
         {% else %}
-            <li><p>You are the only user. How sad.</p></li>
-        {% endfor %}
-    </ul>
+        <!-- We sent THEM a request, show 'Cancel' -->
+        <button
+          class="btn btn-secondary friend-action-btn"
+          data-action="cancel"
+        >
+          Cancel Request
+        </button>
+        {% endif %} {% elif status == 'approved' %}
+        <!-- We are friends, show 'Remove' -->
+        <button class="btn btn-danger friend-action-btn" data-action="remove">
+          Remove Friend
+        </button>
+        {% elif status == 'blocked' %}
+        <span class="btn btn-pending">Blocked</span>
+        {% endif %}
+      </div>
+    </li>
+    {% else %}
+    <li><p>You are the only user. How sad.</p></li>
+    {% endfor %}
+  </ul>
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <!-- JavaScript to handle friend action buttons -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.friend-action-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const userItem = this.closest('.user-item');
-            const userId = userItem.dataset.userId;
-            const action = this.dataset.action; // 'request', 'cancel', 'remove'
-            
-            fetch(`/api/friend_action/${userId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ action: action })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Simple solution: Reload the page to show the new status
-                    window.location.reload(); 
-                } else {
-                    // You could show an error, but reload works for now
-                    console.error('Action failed:', data.error);
-                    window.location.reload();
-                }
-            })
-            .catch(err => {
-                console.error('Fetch error:', err);
-                window.location.reload();
-            });
-        });
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".friend-action-btn").forEach((button) => {
+      button.addEventListener("click", function () {
+        const userItem = this.closest(".user-item");
+        const userId = userItem.dataset.userId;
+        const action = this.dataset.action; // 'request', 'cancel', 'remove'
+
+        fetch(`/api/friend_action/${userId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: action }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Simple solution: Reload the page to show the new status
+              window.location.reload();
+            } else {
+              // You could show an error, but reload works for now
+              console.error("Action failed:", data.error);
+              window.location.reload();
+            }
+          })
+          .catch((err) => {
+            console.error("Fetch error:", err);
+            window.location.reload();
+          });
+      });
     });
-});
+  });
 </script>
 {% endblock %}
