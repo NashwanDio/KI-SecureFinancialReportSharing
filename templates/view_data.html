@@ -192,9 +192,17 @@ file.original_filename }}{% endblock %} {% block head %}
     You have permission to view this report. Please enter the file's encryption
     key to decrypt and view the parsed data.
   </p>
-  <form method="post" class="password-form">
+<form method="post" class="password-form">
     <div class="form-group">
-      <label for="password">File Key (Password):</label>
+      
+      <label for="password">
+        {% if is_owner %}
+            File Encryption Key (Password):
+        {% else %}
+            Your Login Password (to unlock Key):
+        {% endif %}
+      </label>
+      
       <input type="password" name="password" id="password" required />
     </div>
     <button type="submit" class="animated-button">

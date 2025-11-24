@@ -494,54 +494,108 @@ def view_report(file_id):
         flash('No parsed report data found for this file.', 'error')
         return redirect(url_for('dashboard'))
 
+    # 1. Determine Access
     is_owner = file_record.user_id == current_user.id
-    is_approved = AccessRequest.query.filter_by(requester_id=current_user.id, file_id=file_record.id, status='approved').first() is not None
-    if not is_owner and not is_approved:
+    access_request = AccessRequest.query.filter_by(
+        requester_id=current_user.id, 
+        file_id=file_record.id, 
+        status='approved'
+    ).first()
+    
+    if not is_owner and not access_request:
         flash('You do not have permission to view this report.', 'error')
         return redirect(url_for('dashboard'))
         
     if request.method == 'POST':
-        password = request.form.get('password')
-        algorithm = file_record.algorithm_used
-        if not password:
+        input_password = request.form.get('password')
+        
+        if not input_password:
             flash('Password is required.', 'error')
-            return render_template('view_data.html', file=file_record, headers=None, data=None)
+            return render_template('view_data.html', file=file_record, headers=None, data=None, is_owner=is_owner)
+            
+        algorithm = file_record.algorithm_used
+        final_file_password = None
+        
+        # --- BRANCH A: OWNER (Direct Access) ---
+        if is_owner:
+            final_file_password = input_password
+            
+        # --- BRANCH B: CONSULTANT (RSA Unlock) ---
+        else:
+            try:
+                encrypted_priv_key = key_store.get_private_key(current_user.id)
+                if not encrypted_priv_key:
+                     flash('No private key found for your account.', 'error')
+                     return render_template('view_data.html', file=file_record, headers=None, data=None, is_owner=is_owner)
+
+                # Unlock Private Key with Login Password
+                priv_key_obj = RSA.import_key(encrypted_priv_key, passphrase=input_password)
+                cipher_rsa = PKCS1_OAEP.new(priv_key_obj)
+                
+                if not access_request.encrypted_sym_key:
+                     flash('No shared key found for this file.', 'error')
+                     return render_template('view_data.html', file=file_record, headers=None, data=None, is_owner=is_owner)
+                
+                # Decrypt the shared key
+                decrypted_bytes = cipher_rsa.decrypt(access_request.encrypted_sym_key)
+                final_file_password = decrypted_bytes.decode('utf-8')
+
+            except ValueError:
+                 flash('Wrong Login Password (could not unlock private key).', 'error')
+                 return render_template('view_data.html', file=file_record, headers=None, data=None, is_owner=is_owner)
+            except Exception as e:
+                 flash(f'Key decryption failed: {str(e)}', 'error')
+                 return render_template('view_data.html', file=file_record, headers=None, data=None, is_owner=is_owner)
+
+        # --- COMMON PATH: Decrypting the Report ---
         try:
+            # We assume we need to re-derive the key from the password + salt 
+            # (Note: For this to work, we need the SALT. 
+            # In your original code, you read the salt from the encrypted *file*.
+            # But here, we only have the report blob.
+            # FIX: We will grab the salt from the physical file header to be safe.)
+            
             storage_name = file_record.storage_filename
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], storage_name)
-    
-            if not os.path.exists(file_path):
-                return jsonify({'success': False, 'error': 'File not found on server. It may have been moved or deleted.'}), 404
-            try:
-                with open(file_path, 'rb') as f:
-                    encrypted_data_with_salt = f.read()
-            except Exception as e:
-                print(f"Error reading encrypted file {file_path}: {e}")
-                return jsonify({'success': False, 'error': 'Could not read file from storage.'}), 500
-            salt = encrypted_data_with_salt[:SALT_SIZE]
-            key = get_key_from_password(password, salt, algorithm)
+            
+            with open(file_path, 'rb') as f:
+                encrypted_file_header = f.read(SALT_SIZE) # Just read the salt
+            
+            salt = encrypted_file_header # The salt is the first 16 bytes
+            key = get_key_from_password(final_file_password, salt, algorithm)
+            
             decrypted_json_data = None
             if algorithm in ['AES', 'DES']:
-                iv_size = IV_SIZES[algorithm]
-                iv = encrypted_data_with_salt[SALT_SIZE: SALT_SIZE + iv_size]
                 CipherClass = AES if algorithm == 'AES' else DES
+                # Note: We need a fresh IV for the JSON blob. 
+                # In your original encrypt code: cipher_json = CipherClass.new(key, CipherClass.MODE_CBC, iv)
+                # You reused the IV from the file encryption.
+                # We need to read that IV from the file header too.
+                iv_size = IV_SIZES[algorithm]
+                with open(file_path, 'rb') as f:
+                    f.seek(SALT_SIZE)
+                    iv = f.read(iv_size)
+                
                 cipher = CipherClass.new(key, CipherClass.MODE_CBC, iv)
                 decrypted_json_data = unpad(cipher.decrypt(report_data.encrypted_json_data), CipherClass.block_size)
             elif algorithm == 'RC4':
                 cipher = ARC4.new(key)
                 decrypted_json_data = cipher.encrypt(report_data.encrypted_json_data)
+                
             parsed_data = json.loads(decrypted_json_data.decode('utf-8'))
             if not parsed_data:
                 flash('Report data was empty.', 'info')
-                return render_template('view_data.html', file=file_record, headers=None, data=[])
+                return render_template('view_data.html', file=file_record, headers=None, data=[], is_owner=is_owner)
+                
             headers = parsed_data[0].keys()
-            return render_template('view_data.html', file=file_record, headers=headers, data=parsed_data)
-        except (ValueError, KeyError, json.JSONDecodeError):
-            flash('Decryption failed. Please check your password.', 'error')
-            return render_template('view_data.html', file=file_record, headers=None, data=None)
+            return render_template('view_data.html', file=file_record, headers=headers, data=parsed_data, is_owner=is_owner)
+            
+        except (ValueError, KeyError, json.JSONDecodeError) as e:
+            flash(f'Decryption failed. Please check your password. {e}', 'error')
+            return render_template('view_data.html', file=file_record, headers=None, data=None, is_owner=is_owner)
 
-    return render_template('view_data.html', file=file_record, headers=None, data=None)
-
+    # GET Request
+    return render_template('view_data.html', file=file_record, headers=None, data=None, is_owner=is_owner)
 
 @app.route('/download_temp/<path:temp_filename>')
 @login_required

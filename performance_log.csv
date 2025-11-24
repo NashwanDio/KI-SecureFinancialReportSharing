@@ -51,3 +51,4 @@ timestamp,user_id,username,operation,algorithm,execution_time_s,output_size_byte
 2025-11-03T16:46:34.741770,1,a,Encryption,AES,0.004178900002443697,1880560,Draft_1_1.pdf
 2025-11-03T16:53:13.058686,2,b,Encryption,AES,0.006406000000424683,1880560,Draft_1.pdf
 2025-11-24T07:26:36.892874,2,corp,Encryption,AES,0.010951200000818062,594176,canary-mc1.20.4-0.3.3.jar
+2025-11-24T07:30:59.971395,2,corp,Encryption,AES,0.007584599999972852,9024,REPORT_BOOK1.xlsx
