@@ -349,6 +349,7 @@ message in messages %}
 
 <div class="content">
   <div class="main-column">
+    {% if current_user.role == 'organization' %}
     <div class="container">
       <h2>Encrypt a New File</h2>
       <div id="encrypt-form">
@@ -403,6 +404,7 @@ message in messages %}
         </button>
       </div>
     </div>
+    {% endif %}
 
     <div class="container">
       <h2>My Secure Files</h2>

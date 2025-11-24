@@ -270,12 +270,22 @@ def dashboard():
 @app.route('/users')
 @login_required
 def find_users():
-    all_users = User.query.filter(User.id != current_user.id).all()
+    query = User.query.filter(User.id != current_user.id)
+    
+    # --- NEW FILTER: Consultants can only see Organizations ---
+    if current_user.role == 'consultant':
+        query = query.filter(User.role == 'organization')
+    # ---------------------------------------------------------
+    
+    all_users = query.all()
     return render_template('users.html', all_users=all_users)
 
 @app.route('/encrypt', methods=['POST'])
 @login_required
 def encrypt():
+    if current_user.role != 'organization':
+        return jsonify({'success': False, 'error': 'Unauthorized: Only Organizations can upload files.'}), 403
+    
     file = request.files.get('file')
     password = request.form.get('password')
     algorithm = request.form.get('algorithm')

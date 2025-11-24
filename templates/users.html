@@ -112,7 +112,12 @@ head %}
       </div>
     </li>
     {% else %}
-    <li><p>You are the only user. How sad.</p></li>
+    <li>
+      <p style="text-align: center; color: #666; padding: 20px">
+        {% if current_user.role == 'consultant' %} No organizations found. {%
+        else %} No other users found. {% endif %}
+      </p>
+    </li>
     {% endfor %}
   </ul>
 </div>
@@ -121,58 +126,60 @@ head %}
   document.addEventListener("DOMContentLoaded", () => {
     // NOTE: We must use event delegation because we are replacing the button
     // inside the 'user-actions' container.
-    document.querySelector(".user-list").addEventListener("click", function (e) {
-      // Only act if we click a button with this class
-      if (!e.target.classList.contains("friend-action-btn")) {
-        return;
-      }
+    document
+      .querySelector(".user-list")
+      .addEventListener("click", function (e) {
+        // Only act if we click a button with this class
+        if (!e.target.classList.contains("friend-action-btn")) {
+          return;
+        }
 
-      const button = e.target;
-      const userItem = button.closest(".user-item");
-      const userId = userItem.dataset.userId;
-      const action = button.dataset.action; // 'request', 'cancel', 'remove'
-      const actionContainer = button.closest(".user-actions");
+        const button = e.target;
+        const userItem = button.closest(".user-item");
+        const userId = userItem.dataset.userId;
+        const action = button.dataset.action; // 'request', 'cancel', 'remove'
+        const actionContainer = button.closest(".user-actions");
 
-      // Disable the button to prevent double-clicks
-      button.disabled = true;
+        // Disable the button to prevent double-clicks
+        button.disabled = true;
 
-      fetch(`/api/friend_action/${userId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action: action }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            // --- DYNAMIC UPDATE (No Reload) ---
-            if (data.new_status === "pending") {
-              // We just sent a request, change button to 'Cancel'
-              actionContainer.innerHTML = `
+        fetch(`/api/friend_action/${userId}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: action }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // --- DYNAMIC UPDATE (No Reload) ---
+              if (data.new_status === "pending") {
+                // We just sent a request, change button to 'Cancel'
+                actionContainer.innerHTML = `
                 <button class="btn btn-secondary friend-action-btn" data-action="cancel">
                   Cancel Request
                 </button>`;
-            } else if (data.new_status === "none") {
-              // We just canceled or removed, change button to 'Add'
-              actionContainer.innerHTML = `
+              } else if (data.new_status === "none") {
+                // We just canceled or removed, change button to 'Add'
+                actionContainer.innerHTML = `
                 <button class="btn btn-primary friend-action-btn" data-action="request">
                   Send Friend Request
                 </button>`;
+              }
+            } else {
+              window.showToast(data.error || "Action failed", "error");
+              // Re-enable the button on failure
+              button.disabled = false;
             }
-          } else {
-            window.showToast(data.error || "Action failed", "error");
+          })
+          .catch((err) => {
+            console.error("Fetch error:", err);
+            window.showToast("An error occurred. Please try again.", "error");
             // Re-enable the button on failure
             button.disabled = false;
-          }
-        })
-        .catch((err) => {
-          console.error("Fetch error:", err);
-          window.showToast("An error occurred. Please try again.", "error");
-          // Re-enable the button on failure
-          button.disabled = false;
-        });
-    });
+          });
+      });
   });
 </script>
 {% endblock %}
