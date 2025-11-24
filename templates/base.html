@@ -613,6 +613,22 @@
                   requestId
                 );
 
+          // --- NEW: Ask for password if approving a file ---
+          let filePassword = null;
+          if (type === "file_request" && action === "approve") {
+            filePassword = prompt(
+              "Enter the File Password to securely share it:"
+            );
+            if (!filePassword) {
+              window.showToast(
+                "Approval cancelled. Password is required.",
+                "error"
+              );
+              return; // Stop if they cancel or enter nothing
+            }
+          }
+
+          // Disable buttons while processing
           itemElement
             .querySelectorAll("button")
             .forEach((b) => (b.disabled = true));
@@ -620,7 +636,10 @@
           fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: action }),
+            body: JSON.stringify({
+              action: action,
+              file_password: filePassword, // Send the password (or null)
+            }),
           })
             .then((res) => res.json())
             .then((data) => {

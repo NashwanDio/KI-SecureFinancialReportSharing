@@ -24,6 +24,9 @@ from Crypto.Cipher import AES, DES, ARC4
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
+from Crypto.PublicKey import RSA
+import key_store
+from Crypto.Cipher import PKCS1_OAEP
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -92,6 +95,8 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
+    public_key = db.Column(db.Text, nullable=True)
+    role = db.Column(db.String(20), default='consultant', nullable=False)
     files = db.relationship('SecureFile', backref='owner', lazy='dynamic')
     def set_password(self, password): self.password_hash = generate_password_hash(password)
     def check_password(self, password): return check_password_hash(self.password_hash, password)
@@ -130,6 +135,11 @@ class AccessRequest(db.Model):
     status = db.Column(db.String(20), default='pending', nullable=False)
     requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     file_id = db.Column(db.Integer, db.ForeignKey('secure_file.id'), nullable=False)
+    
+    # --- NEW: The Digital Envelope ---
+    encrypted_sym_key = db.Column(db.LargeBinary, nullable=True) 
+    # ---------------------------------
+    
     requester = db.relationship('User', backref='requests_made', lazy='joined')
     file = db.relationship('SecureFile', backref='requests_received', lazy='joined')
 
@@ -178,18 +188,43 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
+    
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        role = request.form.get('role') # Get the role from the form
+        
         if User.query.filter_by(username=username).first():
             flash('Username already exists. Please choose another.', 'error')
             return redirect(url_for('register'))
-        new_user = User(username=username)
+            
+        # --- 1. Generate RSA Key Pair (The "Mailbox") ---
+        key = RSA.generate(2048)
+        
+        # --- 2. Export Public Key (Open to everyone) ---
+        public_key_pem = key.publickey().export_key().decode('utf-8')
+        
+        # --- 3. Export Private Key (Encrypted with User's Password) ---
+        # We use the user's login password to lock this key. 
+        # Even WE (the admins) cannot read this key without their password.
+        encrypted_private_key = key.export_key(
+            passphrase=password, 
+            pkcs=8, 
+            protection="scryptAndAES128-CBC"
+        )
+        
+        # --- 4. Create User in SQL (Public Info) ---
+        new_user = User(username=username, role=role, public_key=public_key_pem)
         new_user.set_password(password)
         db.session.add(new_user)
-        db.session.commit()
-        flash('Account created successfully! Please log in.', 'success')
+        db.session.commit() # Commit now to generate the user.id
+        
+        # --- 5. Store Private Key in NoSQL (Hidden Info) ---
+        key_store.store_private_key(new_user.id, encrypted_private_key)
+        
+        flash('Account created! Keys generated and secured.', 'success')
         return redirect(url_for('login'))
+        
     return render_template('register.html')
 
 @app.route('/forgot_password')
@@ -645,25 +680,54 @@ def api_respond_friend(request_id):
     db.session.commit()
     return jsonify({'success': True})
 
-# --- REWIRED: /api/respond_file_request ---
 @app.route('/api/respond_file_request/<int:request_id>', methods=['POST'])
 @login_required
 def api_respond_file(request_id):
     action = request.json.get('action')
-    if action not in ['approve', 'deny']: return jsonify({'success': False, 'error': 'Invalid action'}), 400
+    # --- NEW: Capture the password sent from the frontend ---
+    file_password = request.json.get('file_password') 
+    
+    if action not in ['approve', 'deny']: 
+        return jsonify({'success': False, 'error': 'Invalid action'}), 400
     
     access_request = AccessRequest.query.get(request_id)
     if not access_request or access_request.file.owner.id != current_user.id:
          return jsonify({'success': False, 'error': 'Request not found or not authorized'}), 404
 
-    # Mark the associated notification as read
+    # Mark notification as read
     Notification.query.filter_by(related_file_request_id=request_id, user_id=current_user.id).update({'is_read': True})
         
     if action == 'approve':
-        access_request.status = 'approved'
-        notif_text = f"Access <strong>approved</strong> for <strong>{access_request.file.original_filename}</strong>."
-        new_notif = Notification(user_id=access_request.requester_id, text=notif_text, is_read=False)
-        db.session.add(new_notif)
+        # --- NEW SECURITY CHECK ---
+        if not file_password:
+             return jsonify({'success': False, 'error': 'Password required to approve access.'}), 400
+             
+        try:
+            # 1. Get the Consultant's Public Key (The "Mailbox")
+            requester_key_pem = access_request.requester.public_key
+            if not requester_key_pem:
+                return jsonify({'success': False, 'error': 'Requester has no public key!'}), 400
+            
+            # 2. Prepare the Asymmetric Cipher
+            recipient_key = RSA.import_key(requester_key_pem)
+            cipher_rsa = PKCS1_OAEP.new(recipient_key)
+            
+            # 3. Encrypt the File Password
+            # We encode it to bytes, then encrypt it
+            enc_key = cipher_rsa.encrypt(file_password.encode('utf-8'))
+            
+            # 4. Store the "Digital Envelope"
+            access_request.encrypted_sym_key = enc_key
+            access_request.status = 'approved'
+            
+            # Notify the consultant
+            notif_text = f"Access <strong>approved</strong> for <strong>{access_request.file.original_filename}</strong>."
+            new_notif = Notification(user_id=access_request.requester_id, text=notif_text, is_read=False)
+            db.session.add(new_notif)
+            
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Encryption handshake failed: {str(e)}'}), 500
+
     else: # 'deny'
         access_request.status = 'denied'
         notif_text = f"Access <strong>denied</strong> for <strong>{access_request.file.original_filename}</strong>."
