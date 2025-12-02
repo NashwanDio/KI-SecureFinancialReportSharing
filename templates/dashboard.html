@@ -606,61 +606,65 @@ message in messages %}
   document.addEventListener("DOMContentLoaded", () => {
     // --- 1. Handle "Encrypt" Clicks (Unchanged) ---
     const encryptBtn = document.getElementById("encrypt-js-btn");
-    const encryptForm = document.getElementById("encrypt-form");
-    encryptBtn.addEventListener("click", function () {
-      const fileInput = document.getElementById("file");
-      const passwordInput = document.getElementById("password_encrypt");
-      if (!fileInput.files || fileInput.files.length === 0) {
-        window.showToast("Please select a file to encrypt.", "error");
-        fileInput.focus();
-        return;
-      }
-      if (!passwordInput.value) {
-        window.showToast("Password is required.", "error");
-        passwordInput.focus();
-        return;
-      }
-      const formData = new FormData();
-      formData.append("file", fileInput.files[0]);
-      formData.append("password", passwordInput.value);
-      formData.append(
-        "algorithm",
-        document.getElementById("algo_encrypt").value
-      );
-      formData.append(
-        "visibility",
-        document.querySelector('input[name="visibility"]:checked').value
-      );
-      const textEl = this.querySelector(".text");
-      const originalText = textEl.textContent;
-      this.disabled = true;
-      textEl.textContent = "Encrypting...";
-      fetch("{{ url_for('encrypt') }}", {
-        method: "POST",
-        body: formData,
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          this.disabled = false;
-          textEl.textContent = originalText;
-          if (data.success) {
-            encryptForm.querySelector('input[type="file"]').value = "";
-            encryptForm.querySelector('input[type="password"]').value = "";
-            window.showResultsModal(data.metrics, () => {
-              window.location.reload();
-            });
-          } else {
-            window.showToast("<strong>Error:</strong> " + data.error, "error");
-          }
+    if (encryptBtn) {
+      const encryptForm = document.getElementById("encrypt-form");
+      encryptBtn.addEventListener("click", function () {
+        const fileInput = document.getElementById("file");
+        const passwordInput = document.getElementById("password_encrypt");
+        if (!fileInput.files || fileInput.files.length === 0) {
+          window.showToast("Please select a file to encrypt.", "error");
+          fileInput.focus();
+          return;
+        }
+        if (!passwordInput.value) {
+          window.showToast("Password is required.", "error");
+          passwordInput.focus();
+          return;
+        }
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        formData.append("password", passwordInput.value);
+        formData.append(
+          "algorithm",
+          document.getElementById("algo_encrypt").value
+        );
+        formData.append(
+          "visibility",
+          document.querySelector('input[name="visibility"]:checked').value
+        );
+        const textEl = this.querySelector(".text");
+        const originalText = textEl.textContent;
+        this.disabled = true;
+        textEl.textContent = "Encrypting...";
+        fetch("{{ url_for('encrypt') }}", {
+          method: "POST",
+          body: formData,
         })
-        .catch((err) => {
-          this.disabled = false;
-          textEl.textContent = originalText;
-          console.error("Fetch error:", err);
-          window.showToast("An error occurred. Please try again.", "error");
-        });
-    });
-
+          .then((res) => res.json())
+          .then((data) => {
+            this.disabled = false;
+            textEl.textContent = originalText;
+            if (data.success) {
+              encryptForm.querySelector('input[type="file"]').value = "";
+              encryptForm.querySelector('input[type="password"]').value = "";
+              window.showResultsModal(data.metrics, () => {
+                window.location.reload();
+              });
+            } else {
+              window.showToast(
+                "<strong>Error:</strong> " + data.error,
+                "error"
+              );
+            }
+          })
+          .catch((err) => {
+            this.disabled = false;
+            textEl.textContent = originalText;
+            console.error("Fetch error:", err);
+            window.showToast("An error occurred. Please try again.", "error");
+          });
+      });
+    }
     // --- 2. Handle "Request Access" Clicks (Unchanged) ---
     document.querySelectorAll(".request-btn").forEach((button) => {
       button.addEventListener("click", function () {
