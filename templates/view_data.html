@@ -1,0 +1,215 @@
+{% extends "base.html" %} {% block title %}View Report: {{
+file.original_filename }}{% endblock %} {% block head %}
+<style>
+  .view-data-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border: 1px solid #e72e40;
+    padding: 25px;
+    border-radius: 18px;
+    box-shadow: 2px 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  h1,
+  h2 {
+    color: #e72e40;
+    font-family: "LEMON MILK", sans-serif;
+    margin-top: 0;
+    word-break: break-all;
+  }
+  .password-form {
+    max-width: 400px;
+  }
+  .form-group {
+    margin-bottom: 20px;
+  }
+  label {
+    color: #e72e40;
+    font-family: "LEMON MILK", sans-serif;
+    font-size: 1.1em;
+    display: block;
+    margin-bottom: 8px;
+  }
+  input[type="password"] {
+    width: 95%;
+    max-width: 400px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #e72e40;
+    font-size: 16px;
+  }
+
+  /* --- === BUTTON FIXES === --- */
+  .animated-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center; /* 1. Center text */
+    gap: 4px;
+    padding: 16px 36px;
+    border: 4px solid;
+    border-color: transparent;
+    font-size: 16px;
+    background-color: inherit;
+    border-radius: 100px;
+    font-weight: 600;
+    color: #e72e40;
+    box-shadow: 0 0 0 2px #e72e40;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+    text-decoration: none;
+  }
+  .animated-button .text {
+    color: #e72e40; /* Text B */
+    font-family: "LEMON MILK", sans-serif;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+    /* 2. REMOVED transform */
+    transition: color 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .animated-button .circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background-color: #e72e40;
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .animated-button:hover {
+    box-shadow: 0 0 0 12px transparent;
+    border-radius: 12px;
+  }
+  .animated-button:hover .text {
+    /* 3. REMOVED transform */
+    color: #ffffff; /* Text A */
+  }
+  .animated-button:hover .circle {
+    width: 220px;
+    height: 220px;
+    opacity: 1; /* BG B */
+  }
+  /* ... (rest of button styles) ... */
+
+  /* Data Table Styles */
+  .data-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  .data-table th,
+  .data-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+    font-family: Muller, sans-serif;
+  }
+  .data-table th {
+    background-color: #f2f2f2;
+    color: #333;
+    font-weight: bold;
+  }
+  .data-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  /* Flash messages */
+  .flash {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: 700;
+  }
+  .error {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  .success {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  .info {
+    background-color: #cce5ff;
+    color: #004085;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="view-data-container">
+  <h1>View Report Data</h1>
+  <h2>{{ file.original_filename }}</h2>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0" />
+
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %} {% for category, message in messages %}
+  <div class="flash {{ category }}">{{ message }}</div>
+  {% endfor %} {% endif %} {% endwith %} {% if data is not none %}
+  <h2>Decrypted Report Data:</h2>
+  {% if data %}
+  <div class="data-table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          {% for header in headers %}
+          <th>{{ header }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in data %}
+        <tr>
+          {% for key in headers %}
+          <td>{{ row[key] }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Report data was parsed but contained no rows.</p>
+  {% endif %}
+  <a
+    href="{{ url_for('dashboard') }}"
+    class="animated-button"
+    style="margin-top: 20px"
+  >
+    <span class="text">Back to Dashboard</span>
+    <span class="circle"></span>
+  </a>
+  {% else %}
+  <h2>Enter Key to View</h2>
+  <p>
+    You have permission to view this report. Please enter the file's encryption
+    key to decrypt and view the parsed data.
+  </p>
+<form method="post" class="password-form">
+    <div class="form-group">
+      
+      <label for="password">
+        {% if is_owner %}
+            File Encryption Key (Password):
+        {% else %}
+            Your Login Password (to unlock Key):
+        {% endif %}
+      </label>
+      
+      <input type="password" name="password" id="password" required />
+    </div>
+    <button type="submit" class="animated-button">
+      <span class="text">Decrypt and View</span>
+      <span class="circle"></span>
+    </button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
