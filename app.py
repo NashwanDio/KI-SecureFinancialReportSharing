@@ -7,6 +7,7 @@ import datetime
 import json
 import io
 import openpyxl
+import tempfile
 from flask import (
     Flask, render_template, request, send_from_directory,
     url_for, redirect, flash, abort, session, jsonify, send_file,
@@ -27,6 +28,19 @@ from Crypto.Random import get_random_bytes
 from Crypto.PublicKey import RSA
 import key_store
 from Crypto.Cipher import PKCS1_OAEP
+
+# --- === NEW IMPORTS FOR PDF SIGNING (ASSIGNMENT 3) === ---
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
+from pyhanko.sign import signers, fields
+from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
+from pyhanko.pdf_utils.reader import PdfFileReader
+from pyhanko.sign.validation import validate_pdf_signature, PdfSignatureStatus
+from pyhanko.sign.general import load_cert_from_pemder
+from pyhanko_certvalidator import ValidationContext
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -52,6 +66,51 @@ def get_key_from_password(password, salt, algorithm):
     if not key_size:
         raise ValueError("Invalid algorithm specified for key derivation")
     return PBKDF2(password, salt, dkLen=key_size)
+
+# --- === NEW: CERTIFICATE GENERATOR FOR ADOBE COMPATIBILITY === ---
+def generate_self_signed_cert(user, private_key_pem_bytes):
+    """
+    Generates a temporary X.509 certificate using the user's RSA key.
+    This is required for standard PDF signing (PAdES).
+    """
+    # 1. Load the private key (using cryptography lib)
+    private_key = serialization.load_pem_private_key(
+        private_key_pem_bytes,
+        password=None
+    )
+    
+    # 2. Extract Public Key
+    public_key = private_key.public_key()
+    
+    # 3. Build the Certificate
+    builder = x509.CertificateBuilder()
+    builder = builder.subject_name(x509.Name([
+        x509.NameAttribute(NameOID.COMMON_NAME, user.username),
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Golshi Encryptor Org"),
+        x509.NameAttribute(NameOID.COUNTRY_NAME, u"ID"),
+    ]))
+    builder = builder.issuer_name(x509.Name([
+        x509.NameAttribute(NameOID.COMMON_NAME, user.username),
+    ]))
+    
+    now = datetime.datetime.now(datetime.timezone.utc)
+    builder = builder.not_valid_before(now)
+    builder = builder.not_valid_after(now + datetime.timedelta(days=365))
+    # -------------------------------------------------------------
+    
+    builder = builder.serial_number(x509.random_serial_number())
+    builder = builder.public_key(public_key)
+    builder = builder.add_extension(
+        x509.BasicConstraints(ca=False, path_length=None), critical=True,
+    )
+    
+    # 4. Sign the certificate
+    certificate = builder.sign(
+        private_key=private_key, 
+        algorithm=hashes.SHA256() 
+    )
+    
+    return certificate, private_key
 
 PERFORMANCE_LOG_FILE = 'performance_log.csv'
 LOG_HEADERS = [
@@ -126,7 +185,8 @@ class SecureFile(db.Model):
     upload_timestamp = db.Column(db.DateTime, server_default=db.func.now())
     # --- POINT 2: Replaced 'encrypted_data' with 'storage_filename' ---
     storage_filename = db.Column(db.String(255), nullable=False, unique=True)
-    # encrypted_data = db.Column(db.LargeBinary, nullable=False) # --- REMOVED ---
+    # --- NEW: Flag to indicate if file is signed ---
+    has_signature = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     is_public = db.Column(db.Boolean, default=True, nullable=False)
 
@@ -495,6 +555,230 @@ def decrypt(file_id):
         'original_name': file_record.original_filename
     })
 
+@app.route('/sign_pdf/<int:file_id>', methods=['POST'])
+@login_required
+def sign_pdf(file_id):
+    """
+    Signs the PDF by temporarily exporting keys to disk to ensure library compatibility.
+    """
+    file_record = SecureFile.query.get_or_404(file_id)
+    if file_record.user_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Only owner can sign.'}), 403
+        
+    if not file_record.original_filename.lower().endswith('.pdf'):
+        return jsonify({'success': False, 'error': 'Only PDF files can be signed.'}), 400
+
+    file_password = request.form.get('file_password')
+    login_password = request.form.get('login_password')
+    
+    if not file_password or not login_password: 
+        return jsonify({'success': False, 'error': 'Both File and Login passwords are required.'}), 400
+
+    # Paths for temp files (Cleaned up in finally block)
+    t_key_path = None
+    t_cert_path = None
+
+    try:
+        # A. Unlock User's Private Key
+        try:
+            encrypted_priv_key = key_store.get_private_key(current_user.id)
+            if not encrypted_priv_key:
+                 return jsonify({'success': False, 'error': 'No private key found.'}), 400
+                 
+            priv_key_pem_bytes = RSA.import_key(encrypted_priv_key, passphrase=login_password).export_key()
+            
+            # Generate Cert
+            cert_obj, crypto_priv_key = generate_self_signed_cert(current_user, priv_key_pem_bytes)
+            
+            # --- FIX: Write Cert and Key to Temp Files ---
+            # This ensures PyHanko loads them correctly without object type errors.
+            
+            # 1. Write Key
+            t_key = tempfile.NamedTemporaryFile(delete=False)
+            t_key.write(crypto_priv_key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()
+            ))
+            t_key.close()
+            t_key_path = t_key.name
+
+            # 2. Write Cert
+            t_cert = tempfile.NamedTemporaryFile(delete=False)
+            t_cert.write(cert_obj.public_bytes(serialization.Encoding.PEM))
+            t_cert.close()
+            t_cert_path = t_cert.name
+            # ---------------------------------------------
+            
+        except ValueError:
+             return jsonify({'success': False, 'error': 'Incorrect LOGIN password.'}), 400
+
+        # B. Decrypt the PDF File
+        storage_name = file_record.storage_filename
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], storage_name)
+        
+        try:
+            with open(file_path, 'rb') as f: encrypted_data = f.read()
+            salt = encrypted_data[:SALT_SIZE]
+            key = get_key_from_password(file_password, salt, file_record.algorithm_used)
+            
+            decrypted_pdf_data = None
+            if file_record.algorithm_used in ['AES', 'DES']:
+                iv_size = IV_SIZES[file_record.algorithm_used]
+                iv = encrypted_data[SALT_SIZE: SALT_SIZE+iv_size]
+                ct = encrypted_data[SALT_SIZE+iv_size:]
+                CipherClass = AES if file_record.algorithm_used == 'AES' else DES
+                cipher = CipherClass.new(key, CipherClass.MODE_CBC, iv)
+                decrypted_pdf_data = unpad(cipher.decrypt(ct), CipherClass.block_size)
+            elif file_record.algorithm_used == 'RC4':
+                ct = encrypted_data[SALT_SIZE:]
+                cipher = ARC4.new(key)
+                decrypted_pdf_data = cipher.encrypt(ct)
+        except:
+            return jsonify({'success': False, 'error': 'Incorrect FILE password.'}), 400
+
+        # C. Sign the PDF (PyHanko loading from Temp Files)
+        try:
+            pdf_in = io.BytesIO(decrypted_pdf_data)
+            pdf_out = io.BytesIO()
+            
+            # --- FIX: Load from temp files ---
+            cms_signer = signers.SimpleSigner.load(
+                key_file=t_key_path,
+                cert_file=t_cert_path
+            )
+            # ---------------------------------
+            
+            signers.sign_pdf(
+                IncrementalPdfFileWriter(pdf_in), 
+                signers.PdfSignatureMetadata(field_name='Signature1'),
+                signer=cms_signer,
+                output=pdf_out,
+            )
+            signed_pdf_bytes = pdf_out.getvalue()
+            
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'Signing failed: {str(e)}'}), 500
+
+        # D. Re-Encrypt Signed PDF
+        new_salt = get_random_bytes(SALT_SIZE)
+        new_key = get_key_from_password(file_password, new_salt, file_record.algorithm_used)
+        
+        final_data = None
+        if file_record.algorithm_used in ['AES', 'DES']:
+            iv = get_random_bytes(IV_SIZES[file_record.algorithm_used])
+            CipherClass = AES if file_record.algorithm_used == 'AES' else DES
+            cipher = CipherClass.new(new_key, CipherClass.MODE_CBC, iv)
+            encrypted_blob = cipher.encrypt(pad(signed_pdf_bytes, CipherClass.block_size))
+            final_data = new_salt + iv + encrypted_blob
+        elif file_record.algorithm_used == 'RC4':
+            cipher = ARC4.new(new_key)
+            encrypted_blob = cipher.encrypt(signed_pdf_bytes)
+            final_data = new_salt + encrypted_blob
+
+        # E. Save
+        with open(file_path, 'wb') as f:
+            f.write(final_data)
+            
+        file_record.has_signature = True
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'PDF signed successfully!'})
+        
+    finally:
+        # F. CLEANUP: Delete the temp files no matter what
+        try:
+            if t_key_path and os.path.exists(t_key_path):
+                os.unlink(t_key_path)
+            if t_cert_path and os.path.exists(t_cert_path):
+                os.unlink(t_cert_path)
+        except Exception:
+            pass
+
+# --- === NEW ROUTE: VERIFY SIGNATURE === ---
+@app.route('/verify_signature/<int:file_id>', methods=['POST'])
+@login_required
+def verify_signature(file_id):
+    file_record = SecureFile.query.get_or_404(file_id)
+    password = request.form.get('password')
+    
+    # 1. Decrypt (Standard AES/DES/RC4 decryption)
+    storage_name = file_record.storage_filename
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], storage_name)
+    try:
+        with open(file_path, 'rb') as f: encrypted_data = f.read()
+        salt = encrypted_data[:SALT_SIZE]
+        key = get_key_from_password(password, salt, file_record.algorithm_used)
+        
+        decrypted_pdf_data = None
+        if file_record.algorithm_used in ['AES', 'DES']:
+            iv_size = IV_SIZES[file_record.algorithm_used]
+            iv = encrypted_data[SALT_SIZE: SALT_SIZE+iv_size]
+            ct = encrypted_data[SALT_SIZE+iv_size:]
+            CipherClass = AES if file_record.algorithm_used == 'AES' else DES
+            cipher = CipherClass.new(key, CipherClass.MODE_CBC, iv)
+            decrypted_pdf_data = unpad(cipher.decrypt(ct), CipherClass.block_size)
+        elif file_record.algorithm_used == 'RC4':
+            ct = encrypted_data[SALT_SIZE:]
+            cipher = ARC4.new(key)
+            decrypted_pdf_data = cipher.encrypt(ct)
+    except:
+        return jsonify({'success': False, 'error': 'Could not decrypt file to verify.'}), 400
+
+    # 2. Verify with PyHanko (The Bulletproof Fix)
+    try:
+        pdf_in = io.BytesIO(decrypted_pdf_data)
+        r = PdfFileReader(pdf_in)
+        
+        if len(r.embedded_signatures) == 0:
+            return jsonify({'success': False, 'error': 'No signatures found.'})
+            
+        sig = r.embedded_signatures[0]
+        
+        # A. Create the Trust Context
+        # We explicitly trust the certificate found in the signature itself.
+        vc = ValidationContext(trust_roots=[sig.signer_cert])
+        
+        # B. Perform Validation (Handling Argument Name Changes)
+        sig_status = None
+        try:
+            # Try the NEW argument name (PyHanko 0.20+)
+            sig_status = validate_pdf_signature(sig, signer_validation_context=vc)
+        except TypeError:
+            # Fallback to OLD argument name
+            try:
+                sig_status = validate_pdf_signature(sig, validation_context=vc)
+            except TypeError:
+                # Fallback: Try without context (might fail with PathBuildingError, but worth a shot)
+                sig_status = validate_pdf_signature(sig)
+
+        # C. Check Validity
+        # .intact means the hash matches (no tampering)
+        is_valid = sig_status.intact 
+
+        # D. Extract Signer Name (Handling Property Name Changes)
+        # Try 'signing_cert' (New), fall back to 'signer_cert' (Old)
+        cert = getattr(sig_status, 'signing_cert', None) or getattr(sig_status, 'signer_cert', None)
+        
+        signer_name = "Unknown"
+        if cert:
+            try:
+                # Try to extract the Common Name (CN)
+                signer_name = cert.subject.human_friendly
+            except:
+                signer_name = "Certificate found but name unreadable"
+
+        return jsonify({
+            'success': True,
+            'valid': is_valid,
+            'signer': signer_name,
+            'timestamp': sig_status.signer_reported_dt.isoformat() if sig_status.signer_reported_dt else "N/A"
+        })
+        
+    except Exception as e:
+        print(f"VERIFY CRASH: {e}") # Check your server console if it fails
+        return jsonify({'success': False, 'error': f'Verification failed: {str(e)}'})
+    
 @app.route('/view_report/<int:file_id>', methods=['GET', 'POST'])
 @login_required
 def view_report(file_id):

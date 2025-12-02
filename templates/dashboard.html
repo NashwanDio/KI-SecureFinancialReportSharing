@@ -22,7 +22,7 @@
     position: relative;
     display: inline-flex;
     align-items: center;
-    justify-content: center; /* 1. Center text horizontally */
+    justify-content: center;
     gap: 4px;
     padding: 16px 36px;
     border: 4px solid;
@@ -65,12 +65,11 @@
     transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
   }
   .animated-button .text {
-    color: #e72e40; /* Text B (Red) */
+    color: #e72e40;
     font-family: "LEMON MILK", sans-serif;
     font-weight: 700;
     position: relative;
     z-index: 1;
-    /* 2. REMOVED transform: translateX(-12px) and its transition */
     transition: color 0.8s cubic-bezier(0.23, 1, 0.32, 1);
   }
   .animated-button:hover {
@@ -84,8 +83,7 @@
     left: 16px;
   }
   .animated-button:hover .text {
-    /* 3. REMOVED transform: translateX(12px) */
-    color: #ffffff; /* Text A (swapped) */
+    color: #ffffff;
   }
   .animated-button:hover svg {
     fill: #ffffff;
@@ -97,7 +95,7 @@
   .animated-button:hover .circle {
     width: 220px;
     height: 220px;
-    opacity: 1; /* This is BG B (Red) */
+    opacity: 1;
   }
 
   .content {
@@ -226,20 +224,16 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 330px; /* Fixed width for alignment */
+    width: 330px;
   }
   .action-row {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
   }
-  .action-row > .animated-button,
-  .action-row > a.animated-button {
-    flex-grow: 1; /* Let them grow to fill space */
-    flex-basis: 0; /* Start from 0, so they divide the space */
-    padding: 16px 10px;
-    /* FIX: Make the base width 100% of the flex container */
-    width: 100%;
-  }
+  .action-row .animated-button {
+    flex: 1 0 45%;
+  } /* Flexible buttons */
   /* This rule targets the first button *only if it's the ONLY child* */
   .action-row > .animated-button:only-child,
   .action-row > a.animated-button:only-child {
@@ -249,45 +243,43 @@
 
   /* --- NEW 2-BUTTON CASE --- */
   /* 1st button when 2 total */
-  .action-row > .animated-button:first-child:nth-last-child(2),
+  /* .action-row > .animated-button:first-child:nth-last-child(2),
   .action-row > a.animated-button:first-child:nth-last-child(2) {
     flex-basis: 160px;
     flex-grow: 0;
-  }
+  } */
   /* 2nd button when 2 total */
-  .action-row > .animated-button:nth-child(2):nth-last-child(1),
+  /* .action-row > .animated-button:nth-child(2):nth-last-child(1),
   .action-row > a.animated-button:nth-child(2):nth-last-child(1) {
     flex-basis: 160px;
     flex-grow: 0;
-  }
+  } */
 
   /* --- NEW 3-BUTTON CASE --- */
   /* 1st button when 3 total */
-  .action-row > .animated-button:first-child:nth-last-child(3),
+  /* .action-row > .animated-button:first-child:nth-last-child(3),
   .action-row > a.animated-button:first-child:nth-last-child(3) {
     flex-basis: 103px;
     flex-grow: 0;
-  }
+  } */
   /* 2nd button when 3 total */
-  .action-row > .animated-button:nth-child(2):nth-last-child(2),
+  /* .action-row > .animated-button:nth-child(2):nth-last-child(2),
   .action-row > a.animated-button:nth-child(2):nth-last-child(2) {
     flex-basis: 104px;
     flex-grow: 0;
-  }
+  } */
   /* 3rd button when 3 total */
-  .action-row > .animated-button:nth-child(3):nth-last-child(1),
+  /* .action-row > .animated-button:nth-child(3):nth-last-child(1),
   .action-row > a.animated-button:nth-child(3):nth-last-child(1) {
     flex-basis: 103px;
     flex-grow: 0;
-  }
+  } */
 
   .decrypt-form .decrypt-password {
     width: 100%;
     box-sizing: border-box;
     margin: 0;
   }
-
-  /* --- Access Button Alignment (Unchanged) --- */
   .request-action-area {
     min-width: 190px;
     text-align: right;
@@ -331,7 +323,6 @@
     background-color: #dc3545;
     color: white;
   }
-
   .footer {
     text-align: center;
     color: #e72e40;
@@ -339,6 +330,12 @@
     font-family: Muller, sans-serif;
     font-weight: 250;
     margin-top: 50px;
+  }
+  .signed-badge {
+    color: #28a745;
+    font-weight: bold;
+    margin-left: 5px;
+    font-size: 0.9em;
   }
 </style>
 {% endblock %} {% block content %} {% with messages =
@@ -416,12 +413,14 @@ message in messages %}
             <a
               href="{{ url_for('download_encrypted', file_id=file.id) }}"
               class="filename"
-              title="Download encrypted file"
               >{{ file.original_filename }}</a
             >
             <span class="meta">
               Method: {{ file.algorithm_used }} | Visibility: {% if
-              file.is_public %}Public{% else %}Private{% endif %}
+              file.is_public %}Public{% else %}Private{% endif %} {% if
+              file.has_signature %}<span class="signed-badge"
+                ><i class="fas fa-signature"></i> Signed</span
+              >{% endif %}
             </span>
           </div>
           <div class="file-actions">
@@ -437,25 +436,31 @@ message in messages %}
                   class="animated-button decrypt-js-btn"
                   data-file-id="{{ file.id }}"
                 >
-                  <span class="text">Decrypt</span>
-                  <span class="circle"></span>
+                  <span class="text">Decrypt</span><span class="circle"></span>
                 </button>
                 <button
                   type="button"
                   class="animated-button delete-file-btn"
                   data-file-id="{{ file.id }}"
                 >
-                  <span class="text">Delete</span>
-                  <span class="circle"></span>
+                  <span class="text">Delete</span><span class="circle"></span>
                 </button>
-                {% if file.original_filename.startswith(report_prefix) %}
-                <a
-                  href="{{ url_for('view_report', file_id=file.id) }}"
-                  class="animated-button"
+
+                {% if file.original_filename.lower().endswith('.pdf') %}
+                <button
+                  class="animated-button sign-js-btn"
+                  data-file-id="{{ file.id }}"
                 >
-                  <span class="text">View</span>
-                  <span class="circle"></span>
-                </a>
+                  <span class="text">Sign PDF</span><span class="circle"></span>
+                </button>
+                {% endif %} {% if file.has_signature %}
+                <button
+                  class="animated-button verify-js-btn"
+                  data-file-id="{{ file.id }}"
+                >
+                  <span class="text">Verify Sign</span
+                  ><span class="circle"></span>
+                </button>
                 {% endif %}
               </div>
             </div>
@@ -464,7 +469,7 @@ message in messages %}
         {% endfor %}
       </ul>
       {% else %}
-      <p>You haven't encrypted any files yet.</p>
+      <p>No files yet.</p>
       {% endif %}
     </div>
 
@@ -478,12 +483,13 @@ message in messages %}
             <a
               href="{{ url_for('download_encrypted', file_id=file.id) }}"
               class="filename"
-              title="Download encrypted file"
               >{{ file.original_filename }}</a
             >
-            <span class="meta">
-              Method: {{ file.algorithm_used }} | Owner:
-              <strong>{{ file.owner.username }}</strong>
+            <span class="meta"
+              >Method: {{ file.algorithm_used }} | Owner: {{ file.owner.username
+              }} {% if file.has_signature %}<span class="signed-badge"
+                ><i class="fas fa-signature"></i> Signed</span
+              >{% endif %}
             </span>
           </div>
           <div class="file-actions">
@@ -499,17 +505,16 @@ message in messages %}
                   class="animated-button decrypt-js-btn"
                   data-file-id="{{ file.id }}"
                 >
-                  <span class="text">Decrypt</span>
-                  <span class="circle"></span>
+                  <span class="text">Decrypt</span><span class="circle"></span>
                 </button>
-                {% if file.original_filename.startswith(report_prefix) %}
-                <a
-                  href="{{ url_for('view_report', file_id=file.id) }}"
-                  class="animated-button"
+                {% if file.has_signature %}
+                <button
+                  class="animated-button verify-js-btn"
+                  data-file-id="{{ file.id }}"
                 >
-                  <span class="text">View Data</span>
-                  <span class="circle"></span>
-                </a>
+                  <span class="text">Verify Sign</span
+                  ><span class="circle"></span>
+                </button>
                 {% endif %}
               </div>
             </div>
@@ -518,7 +523,7 @@ message in messages %}
         {% endfor %}
       </ul>
       {% else %}
-      <p>No files have been shared with you yet.</p>
+      <p>No shared files.</p>
       {% endif %}
     </div>
 
@@ -814,6 +819,83 @@ message in messages %}
               });
           }
         );
+      });
+    });
+
+    // --- 4. NEW: SIGN PDF (UPDATED FIX) ---
+    document.querySelectorAll(".sign-js-btn").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const item = this.closest(".file-item");
+            const filePass = item.querySelector(".decrypt-password").value;
+            
+            // 1. Check for File Password (from the input box)
+            if(!filePass) { 
+                window.showToast("Please enter the File Password in the box first.", "error"); 
+                item.querySelector(".decrypt-password").focus();
+                return; 
+            }
+
+            // 2. Prompt for Login Password (for the RSA Key)
+            const loginPass = prompt("Please enter your LOGIN password to verify your identity for the digital signature:");
+            if(!loginPass) {
+                window.showToast("Signature cancelled. Login password required.", "error");
+                return;
+            }
+
+            const textEl = this.querySelector(".text");
+            const origText = textEl.textContent;
+            this.disabled = true; textEl.textContent = "Signing...";
+            
+            // 3. Send BOTH passwords
+            const fd = new FormData(); 
+            fd.append("file_password", filePass);   // To decrypt the file
+            fd.append("login_password", loginPass); // To unlock your RSA key
+            
+            fetch(`/sign_pdf/${this.dataset.fileId}`, { method: 'POST', body: fd })
+            .then(res => res.json()).then(data => {
+                this.disabled = false; textEl.textContent = origText;
+                if(data.success) {
+                    window.showToast("Signed successfully!", "success");
+                    setTimeout(() => window.location.reload(), 1000);
+                } else { window.showToast(data.error, "error"); }
+            });
+        });
+    });
+    
+    // --- 5. NEW: VERIFY SIGNATURE ---
+    document.querySelectorAll(".verify-js-btn").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const item = this.closest(".file-item");
+        const pass = item.querySelector(".decrypt-password").value;
+        if (!pass) {
+          window.showToast("Password required to verify.", "error");
+          return;
+        }
+
+        const textEl = this.querySelector(".text");
+        const origText = textEl.textContent;
+        this.disabled = true;
+        textEl.textContent = "Verifying...";
+
+        const fd = new FormData();
+        fd.append("password", pass);
+        fetch(`/verify_signature/${this.dataset.fileId}`, {
+          method: "POST",
+          body: fd,
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            this.disabled = false;
+            textEl.textContent = origText;
+            if (data.success) {
+              let msg = `<strong>Signature Valid:</strong> ${data.valid}<br>`;
+              msg += `<strong>Signer:</strong> ${data.signer}<br>`;
+              msg += `<strong>Date:</strong> ${data.timestamp}`;
+              window.showToast(msg, data.valid ? "success" : "error");
+            } else {
+              window.showToast(data.error, "error");
+            }
+          });
       });
     });
   });
