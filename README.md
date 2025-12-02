@@ -7,7 +7,7 @@ Prerequisites :
 ```sudo apt install python3 python3-pip python3-venv```
 
 Installation :
-```git clone https://github.com/NashwanDio/KI-SecureFinancialReportSharing.git```
+```git clone https://github.com/NETICS-Laboratory/secure-financial-report-sharing-pt-pendapat-nilai-wah.git```
 
 ```python3 -m venv venv```
 
@@ -50,6 +50,7 @@ Organisations frequently exchange confidential financial reports containing sens
 
 ```
 ├── app.py
+├── key_store.py
 ├── templates/
 │   ├── dashboard.html
 │   ├── login.html
@@ -69,69 +70,32 @@ Organisations frequently exchange confidential financial reports containing sens
 ### 1. Register a New User
 
 - Go to the registration page.
-- Fill in username, password, and (optionally) upload a profile image.
+- Fill in username, password, and role.
 - Passwords are securely hashed before storing.
-
-**Screenshot Placeholder:**  
-_Insert screenshot of registration page here: ![Registration](screenshots/register.png)_
-
----
 
 ### 2. Login
 
 - Go to login page, enter credentials.
 - Successful logins redirect to dashboard.
 
-**Screenshot Placeholder:**  
-_Insert screenshot of login page here: ![Login](screenshots/login.png)_
-
----
-
-### 3. Upload a Financial Report
+### 3. Upload a File
 
 - From dashboard, click "Upload File".
-- Select an Excel file (using provided template).
-- Choose encryption algorithm (AES, DES, RC4) and cipher mode (CBC/CFB/OFB/CTR).
+- Select any file..
+- Choose encryption algorithm (AES, DES, RC4).
 - File is encrypted and stored on the server; report content is encrypted in the database.
-
-**Screenshot Placeholder:**  
-_Insert screenshot of file upload workflow here: ![Upload](screenshots/upload.png)_
-
----
 
 ### 4. Share a Report
 
-- Click "Share" next to any uploaded file.
-- Enter the recipient’s username to grant access.
-- Shared users can view/decrypt the file once authenticated.
-
-**Screenshot Placeholder:**  
-_Insert screenshot of sharing mechanism here: ![Share](screenshots/share.png)_
-
----
+- Other Users (Consultants and Organizers) can request access to publicly available files.
+- Private files can be shared through following other Organizers.
 
 ### 5. Retrieve and Decrypt File
 
 - Shared reports are listed on user’s dashboard.
 - Authorized users can click "Download" or "Decrypt" to access the original file.
 
-**Screenshot Placeholder:**  
-_Insert screenshot of file retrieval/decryption here: ![Retrieve](screenshots/retrieve.png)_
-
 ---
-
-## Performance Comparison
-
-Encryption time, decryption time, and ciphertext size for AES, DES, and RC4 algorithms are recorded for all file types (Excel, images). Results are visualized below.
-
-**Screenshot Placeholder:**  
-_Insert screenshot of results table/chart here: ![Results](screenshots/results.png)_
-
----
-
-Here’s how each **Security Notes** and **Troubleshooting** item in the README maps to code sections:
-
-***
 
 ## Security Notes
 
@@ -170,24 +134,146 @@ Here’s how each **Security Notes** and **Troubleshooting** item in the README 
     threading.Thread(target=log_performance, args=(log_data,)).start()
     ```
 
-***
 
-## Troubleshooting
+---
 
-- **Double-check all environment variables and database settings:**
-  - Database URI and app secrets are loaded/configured near the top:
-    ```python
-    app.config["SECRET_KEY"] = os.urandom(24)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
-    ```
+## 🔍 Performance Comparison
 
-- **If uploads fail, ensure permissions on `static/uploads` are correct:**
-  - Folder is created if missing (see `if __name__ == "__main__":`)
-    ```python
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
-    ```
-    If file writes fail, check filesystem permissions for this folder.
+This section presents the comparative results of three symmetric encryption algorithms — **AES**, **DES**, and **RC4** — used within the Secure Financial Report Sharing System.  
+Performance was measured based on encryption time, throughput, and consistency across multiple file types.
 
+---
+
+### 📈 Overview
+Each algorithm was tested on six different file types:
+> `.docx`, `.xls`, `.pdf`, `.mp4`, `.zip`, `.png`
+
+Metrics collected:
+- **Execution Time (s)** — total encryption time per file and algorithm.
+- **Throughput (MB/s)** — processed data rate (file size divided by encryption time).
+- **Average Time and Throughput** — overall performance summary across all files.
+
+---
+
+### 🧪 Total Encryption Time
+![Total Encryption Time](Mats/output1.png)
+
+| Algorithm | Total Time (s) |
+|------------|----------------|
+| **AES** | 2.43 |
+| **RC4** | 2.22 |
+| **DES** | 10.31 |
+
+> 🔹 *AES and RC4 achieved near-identical total encryption times, while DES required significantly longer.*
+
+---
+
+### ⚙️ Maximum Throughput
+![Maximum Throughput](Mats/output_1.png)
+
+| Algorithm | Max Throughput (MB/s) |
+|------------|----------------------|
+| **AES** | 327.4 |
+| **RC4** | 306.0 |
+| **DES** | 65.6 |
+
+> 🔹 *AES outperformed all algorithms in throughput, handling up to 327 MB/s.*
+
+---
+
+### 📊 Encryption Time by File
+![Encryption Time by File](Mats/output_2.png)
+
+> Each file’s encryption duration was measured individually for all algorithms.  
+> DES consistently shows longer times, especially on `.mp4` files.
+
+---
+
+### 🚀 Throughput by File
+![Throughput by File](Mats/output_3.png)
+
+> AES and RC4 sustain high throughput rates across all file sizes.  
+> DES remains below 70 MB/s, confirming slower processing efficiency.
+
+---
+
+### 🧩 Average Performance Summary
+![Average Performance Summary](Mats/output_4.png)
+
+| Algorithm | Avg. Time (s) | Avg. Throughput (MB/s) |
+|------------|---------------|------------------------|
+| **AES** | 0.404 | 219.4 |
+| **RC4** | 0.370 | 218.3 |
+| **DES** | 1.718 | 58.3 |
+
+> 🔹 *AES provides a stable balance of performance and security.*
+
+---
+
+### 📂 Performance by File Extension
+![Performance by File Extension](Mats/output_5.png)
+
+> AES and RC4 show steady performance across all file types.  
+> DES slows dramatically on large files, especially `.mp4` and `.zip`.
+
+---
+
+### 🔬 File-Level Comparison
+![Per-File Execution Time](Mats/output_6.png)
+
+| File | AES (s) | RC4 (s) | DES (s) |
+|------|----------|---------|---------|
+| openbrush-furqan.mp4 | 2.38 | 2.16 | 10.12 |
+| shirt.zip | 0.023 | 0.030 | 0.121 |
+| report.xls | 0.008 | 0.010 | 0.043 |
+| logo.png | 0.006 | 0.008 | 0.029 |
+| audit.docx | 0.007 | 0.009 | 0.033 |
+| summary.pdf | 0.005 | 0.007 | 0.028 |
+
+---
+
+### 🖼️ Original vs. Encrypted Comparison
+![Hex Comparison Original vs. AES](Mats/hex_aes.png)
+
+> 🔹 *Hex Comparison between original image and AES encrypted image*
+
+![Image Comparison Original vs. AES](Mats/ori_vs_aes.png)
+
+> 🔹 *Image Comparison between original image and AES encrypted image*
+
+![Hex Comparison Original vs. DEC](Mats/hex_des.png)
+
+> 🔹 *Hex Comparison between original image and DES encrypted image*
+
+![Image Comparison Original vs. DEC](Mats/ori_vs_aes.png)
+
+> 🔹 *Image Comparison between original image and DES encrypted image*
+
+![Hex Comparison Original vs. RC4](Mats/hex_rc4.png)
+
+> 🔹 *Hex Comparison between original image and RC4 encrypted image*
+
+![Image Comparison Original vs. DC4](Mats/ori_vs_rc4.png)
+
+> 🔹 *Image Comparison between original image and RC4 encrypted image*
+
+![Excel comparison](Mats/excel.jpeg)
+
+> 🔹 *Excel file Comparison between original file and RC4 encrypted file*
+
+---
+
+### 🧠 Summary
+
+| Algorithm | Strengths | Weaknesses | Recommended For |
+|------------|------------|-------------|----------------|
+| **AES** | Fast, secure, modern standard | Slightly heavier CPU load | All confidential files |
+| **RC4** | Very fast on small data | Known cryptographic flaws | Non-critical or legacy |
+| **DES** | Simple implementation | Weak and slow | Legacy compatibility only |
+
+> ✅ **AES** remains the best choice for secure financial data sharing, balancing speed and encryption strength effectively.
+
+---
 
 
 ## Contributors
@@ -211,5 +297,3 @@ This project is for academic/educational purposes.
 
 - Cryptography libraries used: PyCryptoDome, cryptography
 - Assignment template provided by the course instructor
-
-
